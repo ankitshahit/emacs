@@ -21,7 +21,11 @@
         (eval-print-last-sexp)))
     (load bootstrap-file nil 'nomessage)))
 
+
+(setq dw/is-termux
+      (string-suffix-p "Android" (string-trim (shell-command-to-string "uname -a"))))
 (setq dw/is-guix-system (and (eq system-type 'gnu/linux)
+
                              (require 'f)
                              (string-equal (f-read "/etc/issue")
                                            "\nThis is the GNU system.  Welcome.\n")))
@@ -123,7 +127,17 @@ folder, otherwise delete a word"
 (setq tramp-default-method "ssh")
 
 (cd "g:/projects/")
-;; inserts everything in pair for braces, brackets and quotes
+;; Loading tree-sitter package
+(require 'tree-sitter-langs)
+(require 'tree-sitter)
+
+;; Activate tree-sitter globally (minor mode registered on every buffer)
+(global-tree-sitter-mode)
+(add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
+(add-hook 'js-mode-hook #'tree-sitter-mode)
+
+
+
 (setq inhibit-startup-message t)
 (set-language-environment "UTF-8")
 
@@ -177,10 +191,7 @@ folder, otherwise delete a word"
                 conf-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 1))))
 
-;; Override some modes which derive from the above
-(dolist (mode '(org-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 0))))
-;;(global-display-line-numbers-mode t)
+(global-display-line-numbers-mode t)
 (setq display-line-numbers-type 'relative)
 
 (setq large-file-warning-threshold nil)
@@ -191,7 +202,7 @@ folder, otherwise delete a word"
 ;;Basic Customization
 (setq display-time-format "%l:%M %p %b %y"
       display-time-default-load-average nil)
-
+(display-time-mode t)
 ;; Revert Dired and other buffers
 (setq global-auto-revert-non-file-buffers t)
 
@@ -202,12 +213,8 @@ folder, otherwise delete a word"
   (set-face-attribute 'show-paren-match-expression nil :background "#363e4a")
   (show-paren-mode 1))
 
-;; Disable line numbers for some modes
-(dolist (mode '(org-mode-hook
-                term-mode-hook
-                shell-mode-hook
-                eshell-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+(require `org)
+;; (setq org-clock-sound "C:\Users\ankit\Downloads\despair-metal-trailer-109943.mp3")
 
 (use-package command-log-mode)
 
@@ -235,12 +242,18 @@ folder, otherwise delete a word"
 ;;
 ;; M-x all-the-icons-install-fonts
 
-(use-package all-the-icons)
+(when (display-graphic-p)
+  (require 'all-the-icons))
+;; or
+(use-package all-the-icons
+  :if (display-graphic-p))
+(setq inhibit-compacting-font-caches t)
 
 (use-package doom-modeline
+  :ensure t
   :init (doom-modeline-mode 1)
   :custom ((doom-modeline-height 15)))
-
+(setq doom-modeline-major-mode-icon t)
 (use-package doom-themes
   :init (load-theme 'doom-dracula t))
 
@@ -284,12 +297,129 @@ folder, otherwise delete a word"
   (rune/leader-keys
     "t"  '(:ignore t :which-key "toggles")
     "tt" '(counsel-load-theme :which-key "choose theme")))
+;; ================= LSP MODE ===================
+;;
+;;
+;;
+(use-package js
+  :ensure nil
+  ;; :mode ("\\.jsx?\\'" . js-jsx-mode)
+  :config
+  (setq js-indent-level 2)
+  (add-hook 'flycheck-mode-hook
+            #'(lambda ()
+                (let* ((root (locate-dominating-file
+                              (or (buffer-file-name) default-directory)
+                              "node_modules"))
+                       (eslint
+                        (and root
+                             (expand-file-name "node_modules/.bin/eslint"
+                                               root))))
+                  (when (and eslint (file-executable-p eslint))
+                    (setq-local flycheck-javascript-eslint-executable eslint))))))
+(use-package company-prescient
+  :after (prescient company)
+  :config
+  (company-prescient-mode +1))
+(use-package lsp-mode
+  :hook ((
+          js-mode         ; ts-ls (tsserver wrapper)
+          js-jsx-mode     ; ts-ls (tsserver wrapper)
+          typescript-mode ; ts-ls (tsserver wrapper)
+          python-mode     ; mspyls
+          web-mode
+          ) . lsp)
+  :commands lsp
+  :config
+  (setq lsp-auto-guess-root t)
+  (setq lsp-diagnostic-package :none)             ; disable flycheck-lsp for most modes
+  (add-hook 'web-mode-hook #'lsp-flycheck-enable) ; enable flycheck-lsp for web-mode locally
+  (setq lsp-enable-symbol-highlighting t)
+  (setq lsp-javascript-display-enum-member-value-hints t)
+  (setq lsp-enable-on-type-formatting t)
+  (setq lsp-javascript-format-insert-space-after-constructor t)
 
+  (setq lsp-javascript-suggest-complete-function-calls t)
+  (setq lsp-javascript-format-insert-space-after-opening-and-before-closing-empty-braces t)
+  (setq lsp-signature-auto-activate t)
+  (setq lsp-modeline-code-actions-enable t)
+  (setq lsp-modeline-diagnostics-enable t)
+  (setq lsp-enable-folding t)
+  (setq lsp-enable-imenu t)
+  (setq lsp-enable-snippet t)
+  (setq lsp-enable-completion-at-point t)
+  (setq read-process-output-max (* 1024 1024)) ;; 1mb
+  (setq lsp-idle-delay 0)
+  (setq lsp-prefer-capf t) ; prefer lsp's company-capf over company-lsp
+  (define-key evil-normal-state-map (kbd "g d") 'lsp-goto-implementation)
+  (define-key evil-normal-state-map (kbd "g t") 'lsp-goto-type-definition))
+(advice-add 'json-parse-buffer :around
+              (lambda (orig &rest rest)
+                (save-excursion
+                  (while (re-search-forward "\\\\u0000" nil t)
+                    (replace-match "")))
+                (apply orig rest)))
+  ;; (add-to-list 'lsp-language-id-configuration '(js-jsx-mode . "javascriptreact")))
+
+(use-package company
+  :hook (prog-mode . company-mode)
+  :bind ("TAB" . company-complete)
+  :config
+ (setq company-require-match nil
+        company-show-numbers t
+        company-selection-wrap-around t)
+
+  (setq company-minimum-prefix-length 1)
+  (setq company-selection-wrap-around t)
+  (setq company-tooltip-align-annotations t)
+  (setq company-frontends '(company-pseudo-tooltip-frontend ; show tooltip even for single candidate
+                            company-echo-metadata-frontend))
+  (with-eval-after-load 'company
+    (define-key company-active-map (kbd "C-j") nil) ; avoid conflict with emmet-mode
+    (define-key company-active-map (kbd "C-n") #'company-select-next)
+    (define-key company-active-map (kbd "C-p") #'company-select-previous)))
+(setq company-minimum-prefix-length 1
+      company-idle-delay 0.0) ;; default is 0.2
+ (global-company-mode 1)
+(use-package company-restclient
+  :defer t
+  :after company)
+
+(use-package company-web
+  :defer t
+  :after (web-mode company))
+(use-package flycheck
+  :hook ((prog-mode . flycheck-mode))
+  :config
+  (setq flycheck-check-syntax-automatically '(save mode-enabled newline))
+  (setq flycheck-display-errors-delay 0.1))
+(use-package rjsx-mode
+  :ensure t
+  :config
+  (add-to-list 'auto-mode-alist '("components\/.*\.js\'" . rjsx-mode))
+  (add-to-list 'auto-mode-alist '("pages\/.*\.js\'" . rjsx-mode)))
+
+(use-package typescript-mode :ensure t)
+
+(add-hook 'js-mode-hook #'lsp)
+
+(with-eval-after-load 'js
+  (setq js-indent-level 2)
+  (define-key js-mode-map (kbd "M-.") nil))
+
+
+
+
+
+
+;; ================== End LSP MODE ===============
 (use-package evil
   :init
   (setq evil-want-integration t)
   (setq evil-want-keybinding nil)
   (setq evil-want-C-u-scroll t)
+  (setq evil-want-minibuffer t)
+
   (setq evil-want-C-i-jump nil)
   :config
   (evil-mode 1)
@@ -439,10 +569,10 @@ folder, otherwise delete a word"
         visual-fill-column-center-text t)
   (:hook-into org-mode))
 
-;; (setq display-buffer-base-action
-;;       '(display-buffer-reuse-mode-window
-;;         display-buffer-reuse-window
-;;         display-buffer-same-window))
+(setq display-buffer-base-action
+      '(display-buffer-reuse-mode-window
+        display-buffer-reuse-window
+        display-buffer-same-window))
 
 ;; If a popup does happen, don't resize windows to be equal-sized
 (setq even-window-sizes nil)
@@ -486,7 +616,7 @@ folder, otherwise delete a word"
 (setup (:pkg dired-ranger))
 (setup (:pkg dired-collapse))
 
-(setup dired
+;; (setup dired
   (setq dired-listing-switches "-agho --group-directories-first"
         dired-omit-files "^\\.[^.].*"
         dired-omit-verbose nil
@@ -516,34 +646,33 @@ folder, otherwise delete a word"
     "l" 'dired-single-buffer
     "y" 'dired-ranger-copy
     "X" 'dired-ranger-move
-    "p" 'dired-ranger-paste))
+    "p" 'dired-ranger-paste)
 
-;; (setup (:pkg dired-rainbow)
-;;   (:load-after dired
-;;    (dired-rainbow-define-chmod directory "#6cb2eb" "d.*")
-;;    (dired-rainbow-define html "#eb5286" ("css" "less" "sass" "scss" "htm" "html" "jhtm" "mht" "eml" "mustache" "xhtml"))
-;;    (dired-rainbow-define xml "#f2d024" ("xml" "xsd" "xsl" "xslt" "wsdl" "bib" "json" "msg" "pgn" "rss" "yaml" "yml" "rdata"))
-;;    (dired-rainbow-define document "#9561e2" ("docm" "doc" "docx" "odb" "odt" "pdb" "pdf" "ps" "rtf" "djvu" "epub" "odp" "ppt" "pptx"))
-;;    (dired-rainbow-define markdown "#ffed4a" ("org" "etx" "info" "markdown" "md" "mkd" "nfo" "pod" "rst" "tex" "textfile" "txt"))
-;;    (dired-rainbow-define database "#6574cd" ("xlsx" "xls" "csv" "accdb" "db" "mdb" "sqlite" "nc"))
-;;    (dired-rainbow-define media "#de751f" ("mp3" "mp4" "mkv" "MP3" "MP4" "avi" "mpeg" "mpg" "flv" "ogg" "mov" "mid" "midi" "wav" "aiff" "flac"))
-;;    (dired-rainbow-define image "#f66d9b" ("tiff" "tif" "cdr" "gif" "ico" "jpeg" "jpg" "png" "psd" "eps" "svg"))
-;;    (dired-rainbow-define log "#c17d11" ("log"))
-;;    (dired-rainbow-define shell "#f6993f" ("awk" "bash" "bat" "sed" "sh" "zsh" "vim"))
-;;    (dired-rainbow-define interpreted "#38c172" ("py" "ipynb" "rb" "pl" "t" "msql" "mysql" "pgsql" "sql" "r" "clj" "cljs" "scala" "js"))
-;;    (dired-rainbow-define compiled "#4dc0b5" ("asm" "cl" "lisp" "el" "c" "h" "c++" "h++" "hpp" "hxx" "m" "cc" "cs" "cp" "cpp" "go" "f" "for" "ftn" "f90" "f95" "f03" "f08" "s" "rs" "hi" "hs" "pyc" ".java"))
-;;    (dired-rainbow-define executable "#8cc4ff" ("exe" "msi"))
-;;    (dired-rainbow-define compressed "#51d88a" ("7z" "zip" "bz2" "tgz" "txz" "gz" "xz" "z" "Z" "jar" "war" "ear" "rar" "sar" "xpi" "apk" "xz" "tar"))
-;;    (dired-rainbow-define packaged "#faad63" ("deb" "rpm" "apk" "jad" "jar" "cab" "pak" "pk3" "vdf" "vpk" "bsp"))
-;;    (dired-rainbow-define encrypted "#ffed4a" ("gpg" "pgp" "asc" "bfe" "enc" "signature" "sig" "p12" "pem"))
-;;    (dired-rainbow-define fonts "#6cb2eb" ("afm" "fon" "fnt" "pfb" "pfm" "ttf" "otf"))
-;;    (dired-rainbow-define partition "#e3342f" ("dmg" "iso" "bin" "nrg" "qcow" "toast" "vcd" "vmdk" "bak"))
-;;    (dired-rainbow-define vc "#0074d9" ("git" "gitignore" "gitattributes" "gitmodules"))
-;;    (dired-rainbow-define-chmod executable-unix "#38c172" "-.*x.*")))
+;;(setup (:pkg dired-rainbow))
+;;   (dired-rainbow-define-chmod directory "#6cb2eb" "d.*")
+;;   (dired-rainbow-define html "#eb5286" ("css" "less" "sass" "scss" "htm" "html" "jhtm" "mht" "eml" "mustache" "xhtml"))
+;;   (dired-rainbow-define xml "#f2d024" ("xml" "xsd" "xsl" "xslt" "wsdl" "bib" "json" "msg" "pgn" "rss" "yaml" "yml" "rdata"))
+;;   (dired-rainbow-define document "#9561e2" ("docm" "doc" "docx" "odb" "odt" "pdb" "pdf" "ps" "rtf" "djvu" "epub" "odp" "ppt" "pptx"))
+;;   (dired-rainbow-define markdown "#ffed4a" ("org" "etx" "info" "markdown" "md" "mkd" "nfo" "pod" "rst" "tex" "textfile" "txt"))
+;;   (dired-rainbow-define database "#6574cd" ("xlsx" "xls" "csv" "accdb" "db" "mdb" "sqlite" "nc"))
+;;   (dired-rainbow-define media "#de751f" ("mp3" "mp4" "mkv" "MP3" "MP4" "avi" "mpeg" "mpg" "flv" "ogg" "mov" "mid" "midi" "wav" "aiff" "flac"))
+;;   (dired-rainbow-define image "#f66d9b" ("tiff" "tif" "cdr" "gif" "ico" "jpeg" "jpg" "png" "psd" "eps" "svg"))
+;;   (dired-rainbow-define log "#c17d11" ("log"))
+;;   (dired-rainbow-define shell "#f6993f" ("awk" "bash" "bat" "sed" "sh" "zsh" "vim"))
+;;   (dired-rainbow-define interpreted "#38c172" ("py" "ipynb" "rb" "pl" "t" "msql" "mysql" "pgsql" "sql" "r" "clj" "cljs" "scala" "js"))
+;;   (dired-rainbow-define compiled "#4dc0b5" ("asm" "cl" "lisp" "el" "c" "h" "c++" "h++" "hpp" "hxx" "m" "cc" "cs" "cp" "cpp" "go" "f" "for" "ftn" "f90" "f95" "f03" "f08" "s" "rs" "hi" "hs" "pyc" ".java"))
+;;   (dired-rainbow-define executable "#8cc4ff" ("exe" "msi"))
+;;   (dired-rainbow-define compressed "#51d88a" ("7z" "zip" "bz2" "tgz" "txz" "gz" "xz" "z" "Z" "jar" "war" "ear" "rar" "sar" "xpi" "apk" "xz" "tar"))
+;;   (dired-rainbow-define packaged "#faad63" ("deb" "rpm" "apk" "jad" "jar" "cab" "pak" "pk3" "vdf" "vpk" "bsp"))
+;;   (dired-rainbow-define encrypted "#ffed4a" ("gpg" "pgp" "asc" "bfe" "enc" "signature" "sig" "p12" "pem"))
+;;   (dired-rainbow-define fonts "#6cb2eb" ("afm" "fon" "fnt" "pfb" "pfm" "ttf" "otf"))
+;;   (dired-rainbow-define partition "#e3342f" ("dmg" "iso" "bin" "nrg" "qcow" "toast" "vcd" "vmdk" "bak"))
+;;   (dired-rainbow-define vc "#0074d9" ("git" "gitignore" "gitattributes" "gitmodules"))
+;;   (dired-rainbow-define-chmod executable-unix "#38c172" "-.*x.*")
 
-;; (defun dw/dired-link (path)
-;;   (lexical-let ((target path))
-;;     (lambda () (interactive) (message "Path: %s" target) (dired target))))
+(defun dw/dired-link (path)
+  (lexical-let ((target path))
+    (lambda () (interactive) (message "Path: %s" target) (dired target))))
 
 ;; (dw/leader-key-def
 ;;   "d"   '(:ignore t :which-key "dired")
@@ -592,8 +721,6 @@ folder, otherwise delete a word"
                     (markdown-header-face-5 . 1.0)))
       (set-face-attribute (car face) nil :weight 'normal :height (cdr face)))))
 
-(setup (:pkg flycheck)
-  (:hook-into lsp-mode))
 
 (setup (:pkg rainbow-delimiters)
   (:hook-into prog-mode))
