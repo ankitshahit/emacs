@@ -300,7 +300,6 @@ folder, otherwise delete a word"
 ;; ================= LSP MODE ===================
 ;;
 ;;
-;;
 (use-package js
   :ensure nil
   ;; :mode ("\\.jsx?\\'" . js-jsx-mode)
@@ -323,7 +322,7 @@ folder, otherwise delete a word"
   (company-prescient-mode +1))
 (use-package lsp-mode
   :hook ((
-          js-mode         ; ts-ls (tsserver wrapper)
+;;          js-mode         ; ts-ls (tsserver wrapper)
           js-jsx-mode     ; ts-ls (tsserver wrapper)
           typescript-mode ; ts-ls (tsserver wrapper)
           python-mode     ; mspyls
@@ -332,7 +331,7 @@ folder, otherwise delete a word"
           ) . lsp)
   :commands lsp
   :config
-
+:disabled
   (setq lsp-auto-guess-root t)
   (setq lsp-diagnostic-package :none)             ; disable flycheck-lsp for most modes
   (add-hook 'web-mode-hook #'lsp-flycheck-enable) ; enable flycheck-lsp for web-mode locally
@@ -370,8 +369,6 @@ folder, otherwise delete a word"
                                       (haskell-mode . "haskell")
                                       (php-mode . "php")
                                       (json-mode . "json")
-                                      (js2-mode . "javascript")
-                                      (js-mode . "javascript")
                                       (typescript-mode . "typescript")))
   (define-key evil-normal-state-map (kbd "g d") 'lsp-goto-implementation)
   (define-key evil-normal-state-map (kbd "g t") 'lsp-goto-type-definition))
@@ -447,6 +444,55 @@ folder, otherwise delete a word"
         lsp-ui-doc-include-signature nil
         lsp-ui-doc-position 'at-point
         lsp-ui-doc-show-with-cursor t))
+
+(use-package tide
+
+:ensure t
+
+:init
+
+(setq tide-node-executable "g:/Downloads/node-v14.15.0-win-x64/node")
+)
+(defun setup-tide-mode ()
+
+(interactive)
+
+(tide-setup)
+
+(flycheck-mode +1)
+
+(setq flycheck-check-syntax-automatically '(save mode-enabled))
+
+(eldoc-mode +1)
+
+(tide-hl-identifier-mode +1)
+
+;; company is an optional dependency. You have to
+
+;; install it separately via package-install
+
+;; \M-x package-install [ret] company``
+
+(company-mode +1))
+
+; aligns annotation to the right hand side
+
+(setq company-tooltip-align-annotations t)
+
+;; formats the buffer before saving
+
+(add-hook 'before-save-hook 'tide-format-before-save)
+
+(add-hook 'typescript-mode-hook #'setup-tide-mode)
+
+(add-hook 'js2-mode-hook #'setup-tide-mode)
+(add-hook 'js-mode-hook #'setup-tide-mode)
+
+;; configure javascript-tide checker to run after default javascript checker
+
+(flycheck-add-next-checker 'javascript-eslint 'javascript-tide 'append)
+
+
 
 (use-package prettier-js
  :ensure t
