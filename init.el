@@ -145,6 +145,10 @@ folder, otherwise delete a word"
 
 (scroll-bar-mode -1)        ; Disable visible scrollbar
 (electric-pair-mode t)
+(auto-fill-mode 1)
+(abbrev-mode 1)
+(subword-mode 1)
+(electric-layout-mode t)
 (show-paren-mode 1)
 (tool-bar-mode -1)          ; Disable the toolbar
 (tooltip-mode -1)           ; Disable tooltips
@@ -302,7 +306,7 @@ folder, otherwise delete a word"
 ;;
 (use-package js
   :ensure nil
-  ;; :mode ("\\.jsx?\\'" . js-jsx-mode)
+  :mode ("\\.js?\\'" . js2-mode)
   :config
   (setq js-indent-level 2)
   (add-hook 'flycheck-mode-hook
@@ -322,9 +326,8 @@ folder, otherwise delete a word"
   (company-prescient-mode +1))
 (use-package lsp-mode
   :hook ((
-;;          js-mode         ; ts-ls (tsserver wrapper)
+         js-mode         ; ts-ls (tsserver wrapper)
           js-jsx-mode     ; ts-ls (tsserver wrapper)
-          typescript-mode ; ts-ls (tsserver wrapper)
           python-mode     ; mspyls
           web-mode
           js2-mode
@@ -349,7 +352,7 @@ folder, otherwise delete a word"
   (setq lsp-enable-imenu t)
   (setq lsp-enable-snippet t)
   (setq lsp-enable-completion-at-point t)
-  (setq read-process-output-max (* 1024 1024)) ;; 1mb
+  (setq read-process-output-max (* 1024 2048)) ;; 1mb
   (setq lsp-idle-delay 0)
   (setq lsp-prefer-capf t) ; prefer lsp's company-capf over company-lsp
 (setq lsp-language-id-configuration '((java-mode . "java")
@@ -369,11 +372,13 @@ folder, otherwise delete a word"
                                       (haskell-mode . "haskell")
                                       (php-mode . "php")
                                       (json-mode . "json")
+                                      (javascript . "javascript")
                                       (typescript-mode . "typescript")))
   (define-key evil-normal-state-map (kbd "g d") 'lsp-goto-implementation)
   (define-key evil-normal-state-map (kbd "g t") 'lsp-goto-type-definition))
 
 (add-hook 'js-mode-hook #'lsp)
+(add-hook 'js2-mode-hook #'lsp)
 (advice-add 'json-parse-buffer :around
               (lambda (orig &rest rest)
                 (save-excursion
@@ -428,7 +433,6 @@ folder, otherwise delete a word"
   (add-to-list 'auto-mode-alist '("components\/.*\.js\'" . rjsx-mode))
   (add-to-list 'auto-mode-alist '("pages\/.*\.js\'" . rjsx-mode)))
 
-(use-package typescript-mode :ensure t)
 
 
 (with-eval-after-load 'js
@@ -444,53 +448,6 @@ folder, otherwise delete a word"
         lsp-ui-doc-include-signature nil
         lsp-ui-doc-position 'at-point
         lsp-ui-doc-show-with-cursor t))
-
-(use-package tide
-
-:ensure t
-
-:init
-
-(setq tide-node-executable "g:/Downloads/node-v14.15.0-win-x64/node")
-)
-(defun setup-tide-mode ()
-
-(interactive)
-
-(tide-setup)
-
-(flycheck-mode +1)
-
-(setq flycheck-check-syntax-automatically '(save mode-enabled))
-
-(eldoc-mode +1)
-
-(tide-hl-identifier-mode +1)
-
-;; company is an optional dependency. You have to
-
-;; install it separately via package-install
-
-;; \M-x package-install [ret] company``
-
-(company-mode +1))
-
-; aligns annotation to the right hand side
-
-(setq company-tooltip-align-annotations t)
-
-;; formats the buffer before saving
-
-(add-hook 'before-save-hook 'tide-format-before-save)
-
-(add-hook 'typescript-mode-hook #'setup-tide-mode)
-
-(add-hook 'js2-mode-hook #'setup-tide-mode)
-(add-hook 'js-mode-hook #'setup-tide-mode)
-
-;; configure javascript-tide checker to run after default javascript checker
-
-(flycheck-add-next-checker 'javascript-eslint 'javascript-tide 'append)
 
 
 
