@@ -328,9 +328,11 @@ folder, otherwise delete a word"
           typescript-mode ; ts-ls (tsserver wrapper)
           python-mode     ; mspyls
           web-mode
+          js2-mode
           ) . lsp)
   :commands lsp
   :config
+
   (setq lsp-auto-guess-root t)
   (setq lsp-diagnostic-package :none)             ; disable flycheck-lsp for most modes
   (add-hook 'web-mode-hook #'lsp-flycheck-enable) ; enable flycheck-lsp for web-mode locally
@@ -351,8 +353,30 @@ folder, otherwise delete a word"
   (setq read-process-output-max (* 1024 1024)) ;; 1mb
   (setq lsp-idle-delay 0)
   (setq lsp-prefer-capf t) ; prefer lsp's company-capf over company-lsp
+(setq lsp-language-id-configuration '((java-mode . "java")
+                                      (python-mode . "python")
+                                      (gfm-view-mode . "markdown")
+                                      (rust-mode . "rust")
+                                      (css-mode . "css")
+                                      (xml-mode . "xml")
+                                      (c-mode . "c")
+                                      (c++-mode . "cpp")
+                                      (objc-mode . "objective-c")
+                                      (web-mode . "html")
+                                      (html-mode . "html")
+                                      (sgml-mode . "html")
+                                      (mhtml-mode . "html")
+                                      (go-mode . "go")
+                                      (haskell-mode . "haskell")
+                                      (php-mode . "php")
+                                      (json-mode . "json")
+                                      (js2-mode . "javascript")
+                                      (js-mode . "javascript")
+                                      (typescript-mode . "typescript")))
   (define-key evil-normal-state-map (kbd "g d") 'lsp-goto-implementation)
   (define-key evil-normal-state-map (kbd "g t") 'lsp-goto-type-definition))
+
+(add-hook 'js-mode-hook #'lsp)
 (advice-add 'json-parse-buffer :around
               (lambda (orig &rest rest)
                 (save-excursion
@@ -360,6 +384,14 @@ folder, otherwise delete a word"
                     (replace-match "")))
                 (apply orig rest)))
   ;; (add-to-list 'lsp-language-id-configuration '(js-jsx-mode . "javascriptreact")))
+
+(use-package js-mode
+  :ensure nil
+  :mode (("\\.js?\\'" . js-mode)
+         ("\\.jsx?\\'" . js-mode))
+  :config
+  (setq javascript-indent-level 1)
+  (setq js-indent-level 1))
 
 (use-package company
   :hook (prog-mode . company-mode)
@@ -401,16 +433,27 @@ folder, otherwise delete a word"
 
 (use-package typescript-mode :ensure t)
 
-(add-hook 'js-mode-hook #'lsp)
 
 (with-eval-after-load 'js
   (setq js-indent-level 2)
   (define-key js-mode-map (kbd "M-.") nil))
 
+(use-package lsp-ui
+  :after lsp-mode
+  :config
+  (setq lsp-ui-doc-enable t
+        lsp-ui-peek-enable t
+        lsp-ui-sideline-enable nil
+        lsp-ui-doc-include-signature nil
+        lsp-ui-doc-position 'at-point
+        lsp-ui-doc-show-with-cursor t))
 
-
-
-
+(use-package prettier-js
+ :ensure t
+ :config
+ (add-hook 'js-mode-hook #'prettier-js-mode)
+ (add-hook 'typescript-mode-hook #'prettier-js-mode)
+)
 
 ;; ================== End LSP MODE ===============
 (use-package evil
