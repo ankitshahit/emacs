@@ -386,10 +386,8 @@ folder, otherwise delete a word"
   (define-key evil-normal-state-map (kbd "g d") 'lsp-goto-implementation)
   (define-key evil-normal-state-map (kbd "g t") 'lsp-goto-type-definition))
 
-  (define-key evil-insert-state-map (kbd "S-<f6>") 'lsp-rename)
+  ;; (define-key evil-insert-state-map (kbd "S-<f6>") 'lsp-rename)
   (define-key evil-normal-state-map (kbd "S-<f6>") 'lsp-rename)
-  (define-key evil-normal-state-map (kbd "C M o") 'lsp-organize-imports)
-  (define-key evil-insert-state-map (kbd "C M o") 'lsp-organize-imports)
 
 (add-hook 'js-mode-hook (
                          lambda ()
@@ -496,7 +494,10 @@ folder, otherwise delete a word"
   (evil-set-initial-state 'messages-buffer-mode 'normal)
   (evil-set-initial-state 'dashboard-mode 'normal))
 
+  (setq evil-want-keybinding nil)
 (use-package evil-collection
+  :init
+
   :after evil
   :config
   (evil-collection-init))
