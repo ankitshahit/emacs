@@ -40,9 +40,33 @@
                      (emacs-init-time "%.2f")
                      gcs-done)))
 
+(require 'package)
+
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                         ("org" . "https://orgmode.org/elpa/")
+                         ("elpa" . "https://elpa.gnu.org/packages/")))
+
+(package-initialize)
+(unless package-archive-contents
+ (package-refresh-contents))
+
+;; Initialize use-package on non-Linux platforms
+(unless (package-installed-p 'use-package)
+   (package-install 'use-package))
+
+(require 'use-package)
+(setq use-package-always-ensure t)
 ;; Recipe is always a list
 ;; Install via Guix if length == 1 or :guix t is present
 
+(setq backup-directory-alist '(("." . "~/.emacs.d/backup"))
+  backup-by-copying t    ; Don't delink hardlinks
+  version-control t      ; Use version numbers on backups
+  delete-old-versions t  ; Automatically delete excess backups
+  kept-new-versions 20   ; how many of the newest versions to keep
+  kept-old-versions 5    ; and how many of the old
+  )
+;; Initialize package sources
 (defvar dw/guix-emacs-packages '()
   "Contains a list of all Emacs package names that must be
 installed via Guix.")
@@ -86,6 +110,69 @@ installed via Guix.")
         (expand-file-name (format "emacs-custom-%s.el" (user-uid)) temporary-file-directory)))
 (load custom-file t)
 
+;; ================== Evil package =========================
+(use-package evil
+  :init
+  (setq evil-want-integration t)
+  (setq evil-want-keybinding nil)
+  (setq evil-want-C-u-scroll t)
+  (setq evil-want-minibuffer t)
+
+  (setq evil-want-C-i-jump nil)
+  :config
+  (evil-mode 1)
+  (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
+  (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
+
+  ;; Use visual line motions even outside of visual-line-mode buffers
+  (evil-global-set-key 'motion "j" 'evil-next-visual-line)
+  (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
+
+  (evil-set-initial-state 'messages-buffer-mode 'normal)
+  (evil-set-initial-state 'dashboard-mode 'normal))
+
+  (setq evil-want-keybinding nil)
+(use-package evil-collection
+  :init
+
+  :after evil
+  :config
+  (evil-collection-init))
+;; Set Emacs state modes
+  (dolist (mode '(custom-mode
+                  dired-mode
+                  eshell-mode
+                  git-rebase-mode
+                  erc-mode
+                  circe-server-mode
+                  circe-chat-mode
+                  circe-query-mode
+                  sauron-mode
+                  treemacs-mode
+                  term-mode))
+    (add-to-list 'evil-emacs-state-modes mode))
+    (defun dw/dont-arrow-me-bro ()
+      (interactive)
+      (message "Arrow keys are bad, you know?"))
+  ;; Disable arrow keys in normal and visual modes
+    (define-key evil-normal-state-map (kbd "<left>") 'dw/dont-arrow-me-bro)
+    (define-key evil-normal-state-map (kbd "<right>") 'dw/dont-arrow-me-bro)
+    (define-key evil-normal-state-map (kbd "<down>") 'dw/dont-arrow-me-bro)
+    (define-key evil-normal-state-map (kbd "<up>") 'dw/dont-arrow-me-bro)
+    (evil-global-set-key 'motion (kbd "<left>") 'dw/dont-arrow-me-bro)
+    (evil-global-set-key 'motion (kbd "<right>") 'dw/dont-arrow-me-bro)
+    (evil-global-set-key 'motion (kbd "<down>") 'dw/dont-arrow-me-bro)
+    (evil-global-set-key 'motion (kbd "<up>") 'dw/dont-arrow-me-bro)
+
+  (evil-set-initial-state 'messages-buffer-mode 'normal)
+  (evil-set-initial-state 'dashboard-mode 'normal)
+
+(setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
+  (setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
+  (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
+  (setq scroll-step 1) ;; keyboard scroll one line at a time
+  (setq use-dialog-box nil)
+;;=========== End of evil mode ================
 (defun dw/minibuffer-backward-kill (arg)
   "When minibuffer is completing a file name delete up to parent
 folder, otherwise delete a word"
@@ -117,19 +204,21 @@ folder, otherwise delete a word"
 (setup (:pkg evil-nerd-commenter)
   (:global "M-/" evilnc-comment-or-uncomment-lines))
 
-;; Set default connection mode to SSH
-(setq tramp-default-method "ssh")
-
-(cd "g:/projects/")
-;; Loading tree-sitter package
-(require 'tree-sitter-langs)
-(require 'tree-sitter)
+; Loading tree-sitter package
+;; (require 'tree-sitter-langs)
+;; (require 'tree-sitter)
 
 ;; Activate tree-sitter globally (minor mode registered on every buffer)
-(global-tree-sitter-mode)
-(add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
-(add-hook 'js-mode-hook #'tree-sitter-mode)
+;; (global-tree-sitter-mode)
+;; (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
+;; (add-hook 'js-mode-hook #'tree-sitter-mode)
 
+
+;; ============== Editor connfiguration ===============
+(cd "g:/projects/")
+
+;; Set default connection mode to SSH
+(setq tramp-default-method "ssh")
 
 
 (setq inhibit-startup-message t)
@@ -167,33 +256,6 @@ folder, otherwise delete a word"
 (setq visible-bell t)
 
 (set-face-attribute 'default nil :font "Fira Code Retina" :height runemacs/default-font-size)
-(setq backup-directory-alist '(("." . "~/.emacs.d/backup"))
-  backup-by-copying t    ; Don't delink hardlinks
-  version-control t      ; Use version numbers on backups
-  delete-old-versions t  ; Automatically delete excess backups
-  kept-new-versions 20   ; how many of the newest versions to keep
-  kept-old-versions 5    ; and how many of the old
-  )
-;; Make ESC quit prompts
-(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
-(global-set-key (kbd "C-M-u") 'universal-argument)
-;; Initialize package sources
-(require 'package)
-
-(setq package-archives '(("melpa" . "https://melpa.org/packages/")
-                         ("org" . "https://orgmode.org/elpa/")
-                         ("elpa" . "https://elpa.gnu.org/packages/")))
-
-(package-initialize)
-(unless package-archive-contents
- (package-refresh-contents))
-
-;; Initialize use-package on non-Linux platforms
-(unless (package-installed-p 'use-package)
-   (package-install 'use-package))
-
-(require 'use-package)
-(setq use-package-always-ensure t)
 
 (column-number-mode)
 ;; Enable line numbers for some modes
@@ -220,15 +282,19 @@ folder, otherwise delete a word"
 ;; Revert buffers when the underlying file has changed
 (global-auto-revert-mode 1)
 
+;; Make ESC quit prompts
+(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+(global-set-key (kbd "C-M-u") 'universal-argument)
+;; ============ Editor ======================
 (setup (:require paren)
   (set-face-attribute 'show-paren-match-expression nil :background "#363e4a")
   (show-paren-mode 1))
 
-(require `org)
+;; (require `org)
 ;; (setq org-clock-sound "C:\Users\ankit\Downloads\despair-metal-trailer-109943.mp3")
 
-(use-package command-log-mode)
-
+;; (use-package command-log-mode)
+;; ============ Styling ================
 (use-package ivy
   :diminish
   :bind (("C-s" . swiper)
@@ -270,16 +336,21 @@ folder, otherwise delete a word"
 
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
+(use-package ivy-rich
+  :init
+  (ivy-rich-mode 1))
 
+
+(setup (:require paren)
+  (set-face-attribute 'show-paren-match-expression nil :background "#363e4a")
+  (show-paren-mode 1))
+
+;; ======== Styling complete ==================
 (use-package which-key
   :init (which-key-mode)
   :diminish which-key-mode
   :config
   (setq which-key-idle-delay 1))
-
-(use-package ivy-rich
-  :init
-  (ivy-rich-mode 1))
 
 (use-package counsel
   :bind (("M-x" . counsel-M-x)
@@ -386,8 +457,8 @@ folder, otherwise delete a word"
   (define-key evil-normal-state-map (kbd "g d") 'lsp-goto-implementation)
   (define-key evil-normal-state-map (kbd "g t") 'lsp-goto-type-definition))
 
-  ;; (define-key evil-insert-state-map (kbd "S-<f6>") 'lsp-rename)
-  (define-key evil-normal-state-map (kbd "S-<f6>") 'lsp-rename)
+  ;; (define-key evil-innusert-state-map (kbd "S-<f6>") 'lsp-rename)
+  ;; (define-key evil-normal-state-map (kbd "S-<f6>") 'lsp-rename)
 
 (add-hook 'js-mode-hook (
                          lambda ()
@@ -459,8 +530,8 @@ folder, otherwise delete a word"
   :config
   (setq lsp-ui-doc-enable t
         lsp-ui-peek-enable t
-        lsp-ui-sideline-enable nil
-        lsp-ui-doc-include-signature nil
+        lsp-ui-sideline-enable t
+        lsp-ui-doc-include-signature t
         lsp-ui-doc-position 'at-point
         lsp-ui-doc-show-with-cursor t))
 
@@ -474,67 +545,6 @@ folder, otherwise delete a word"
 )
 
 ;; ================== End LSP MODE ===============
-(use-package evil
-  :init
-  (setq evil-want-integration t)
-  (setq evil-want-keybinding nil)
-  (setq evil-want-C-u-scroll t)
-  (setq evil-want-minibuffer t)
-
-  (setq evil-want-C-i-jump nil)
-  :config
-  (evil-mode 1)
-  (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
-  (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
-
-  ;; Use visual line motions even outside of visual-line-mode buffers
-  (evil-global-set-key 'motion "j" 'evil-next-visual-line)
-  (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
-
-  (evil-set-initial-state 'messages-buffer-mode 'normal)
-  (evil-set-initial-state 'dashboard-mode 'normal))
-
-  (setq evil-want-keybinding nil)
-(use-package evil-collection
-  :init
-
-  :after evil
-  :config
-  (evil-collection-init))
-;; Set Emacs state modes
-  (dolist (mode '(custom-mode
-                  dired-mode
-                  eshell-mode
-                  git-rebase-mode
-                  erc-mode
-                  circe-server-mode
-                  circe-chat-mode
-                  circe-query-mode
-                  sauron-mode
-                  treemacs-mode
-                  term-mode))
-    (add-to-list 'evil-emacs-state-modes mode))
-    (defun dw/dont-arrow-me-bro ()
-      (interactive)
-      (message "Arrow keys are bad, you know?"))
-  ;; Disable arrow keys in normal and visual modes
-    (define-key evil-normal-state-map (kbd "<left>") 'dw/dont-arrow-me-bro)
-    (define-key evil-normal-state-map (kbd "<right>") 'dw/dont-arrow-me-bro)
-    (define-key evil-normal-state-map (kbd "<down>") 'dw/dont-arrow-me-bro)
-    (define-key evil-normal-state-map (kbd "<up>") 'dw/dont-arrow-me-bro)
-    (evil-global-set-key 'motion (kbd "<left>") 'dw/dont-arrow-me-bro)
-    (evil-global-set-key 'motion (kbd "<right>") 'dw/dont-arrow-me-bro)
-    (evil-global-set-key 'motion (kbd "<down>") 'dw/dont-arrow-me-bro)
-    (evil-global-set-key 'motion (kbd "<up>") 'dw/dont-arrow-me-bro)
-
-  (evil-set-initial-state 'messages-buffer-mode 'normal)
-  (evil-set-initial-state 'dashboard-mode 'normal)
-
-(setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
-  (setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
-  (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
-  (setq scroll-step 1) ;; keyboard scroll one line at a time
-  (setq use-dialog-box nil)
 (use-package hydra)
 
 (defhydra hydra-text-scale (:timeout 4)
@@ -545,10 +555,6 @@ folder, otherwise delete a word"
 
 (rune/leader-keys
   "ts" '(hydra-text-scale/body :which-key "scale text"))
-
-(setup (:require paren)
-  (set-face-attribute 'show-paren-match-expression nil :background "#363e4a")
-  (show-paren-mode 1))
 
 (setup (:pkg corfu :host github :repo "minad/corfu")
   (:with-map corfu-map
