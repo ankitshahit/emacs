@@ -154,9 +154,10 @@ folder, otherwise delete a word"
 (tooltip-mode -1)           ; Disable tooltips
 (set-fringe-mode 10)        ; Give some breathing room
 (menu-bar-mode -1)            ; Disable the menu bar
+(tab-bar-mode t)
 ;; maximize sccreen and windowSet frame transparency and maximize windows by default.
-  (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
- (set-frame-parameter (selected-frame) 'alpha '(93 . 95))
+  (add-to-list 'default-frame-alist '(alpha . (100 . 95)))
+ (set-frame-parameter (selected-frame) 'alpha '(95 . 95))
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
 (add-hook 'window-setup-hook 'toggle-frame-fullscreen t)
 (add-hook 'window-setup-hook 'toggle-frame-maximized t)
@@ -166,7 +167,13 @@ folder, otherwise delete a word"
 (setq visible-bell t)
 
 (set-face-attribute 'default nil :font "Fira Code Retina" :height runemacs/default-font-size)
-
+(setq backup-directory-alist '(("." . "~/.emacs.d/backup"))
+  backup-by-copying t    ; Don't delink hardlinks
+  version-control t      ; Use version numbers on backups
+  delete-old-versions t  ; Automatically delete excess backups
+  kept-new-versions 20   ; how many of the newest versions to keep
+  kept-old-versions 5    ; and how many of the old
+  )
 ;; Make ESC quit prompts
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 (global-set-key (kbd "C-M-u") 'universal-argument)
