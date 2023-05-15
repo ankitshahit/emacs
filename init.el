@@ -117,12 +117,6 @@ folder, otherwise delete a word"
 (setup (:pkg evil-nerd-commenter)
   (:global "M-/" evilnc-comment-or-uncomment-lines))
 
-(setq-default indent-tabs-mode nil)
-
-(setq-default tab-width 2)
-(setq-default evil-shift-width tab-width)
-
-
 ;; Set default connection mode to SSH
 (setq tramp-default-method "ssh")
 
@@ -152,6 +146,12 @@ folder, otherwise delete a word"
 (show-paren-mode 1)
 (tool-bar-mode -1)          ; Disable the toolbar
 (tooltip-mode -1)           ; Disable tooltips
+
+(setq-default indent-tabs-mode nil)
+
+(setq-default tab-width 2)
+(setq-default evil-shift-width tab-width)
+
 (set-fringe-mode 10)        ; Give some breathing room
 (menu-bar-mode -1)            ; Disable the menu bar
 (tab-bar-mode t)
@@ -346,6 +346,8 @@ folder, otherwise delete a word"
   (setq lsp-diagnostic-package :none)             ; disable flycheck-lsp for most modes
   (add-hook 'web-mode-hook #'lsp-flycheck-enable) ; enable flycheck-lsp for web-mode locally
   (setq lsp-enable-symbol-highlighting t)
+(with-eval-after-load 'lsp-mode
+  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
   (setq lsp-javascript-display-enum-member-value-hints t)
   (setq lsp-enable-on-type-formatting t)
   (setq lsp-javascript-format-insert-space-after-constructor t)
@@ -384,6 +386,14 @@ folder, otherwise delete a word"
   (define-key evil-normal-state-map (kbd "g d") 'lsp-goto-implementation)
   (define-key evil-normal-state-map (kbd "g t") 'lsp-goto-type-definition))
 
+  (define-key evil-insert-state-map (kbd "S-<f6>") 'lsp-rename)
+  (define-key evil-normal-state-map (kbd "S-<f6>") 'lsp-rename)
+  (define-key evil-normal-state-map (kbd "C M o") 'lsp-organize-imports)
+  (define-key evil-insert-state-map (kbd "C M o") 'lsp-organize-imports)
+
+(add-hook 'js-mode-hook (
+                         lambda ()
+                                (add-hook 'before-save-hook 'lsp-organize-imports)))
 (add-hook 'js-mode-hook #'lsp)
 (add-hook 'js2-mode-hook #'lsp)
 (advice-add 'json-parse-buffer :around
@@ -399,8 +409,8 @@ folder, otherwise delete a word"
   :mode (("\\.js?\\'" . js-mode)
          ("\\.jsx?\\'" . js-mode))
   :config
-  (setq javascript-indent-level 1)
-  (setq js-indent-level 1))
+  (setq javascript-indent-level 2)
+  (setq js-indent-level 2))
 
 (use-package company
   :hook (prog-mode . company-mode)
@@ -492,6 +502,7 @@ folder, otherwise delete a word"
   (evil-collection-init))
 ;; Set Emacs state modes
   (dolist (mode '(custom-mode
+                  dired-mode
                   eshell-mode
                   git-rebase-mode
                   erc-mode
@@ -499,6 +510,7 @@ folder, otherwise delete a word"
                   circe-chat-mode
                   circe-query-mode
                   sauron-mode
+                  treemacs-mode
                   term-mode))
     (add-to-list 'evil-emacs-state-modes mode))
     (defun dw/dont-arrow-me-bro ()
