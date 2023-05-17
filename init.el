@@ -138,19 +138,12 @@ installed via Guix.")
   :after evil
   :config
   (evil-collection-init))
+;; (evil-set-initial-state 'dired-mode 'emacs)
 ;; Set Emacs state modes
-  (dolist (mode '(custom-mode
-                  dired-mode
-                  eshell-mode
-                  git-rebase-mode
-                  erc-mode
-                  circe-server-mode
-                  circe-chat-mode
-                  circe-query-mode
-                  sauron-mode
-                  treemacs-mode
-                  term-mode))
-    (add-to-list 'evil-emacs-state-modes mode))
+  ;; (dolist (mode '(custom-mode
+  ;;                 treemacs-mode
+  ;;                 term-mode))
+  ;;   (add-to-list 'evil-emacs-state-modes mode))
     (defun dw/dont-arrow-me-bro ()
       (interactive)
       (message "Arrow keys are bad, you know?"))
@@ -166,7 +159,15 @@ installed via Guix.")
 
   (evil-set-initial-state 'messages-buffer-mode 'normal)
   (evil-set-initial-state 'dashboard-mode 'normal)
-
+(setq evil-want-fine-undo t)
+;; (use-package undo-tree
+;;   :ensure t
+;;   :after evil
+;;   :diminish
+;;   :config
+;;   (evil-set-undo-system 'undo-tree)
+;;   (global-undo-tree-mode 1))
+(evil-set-undo-system 'undo-redo)
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
   (setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
   (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
@@ -245,8 +246,8 @@ folder, otherwise delete a word"
 (menu-bar-mode -1)            ; Disable the menu bar
 (tab-bar-mode t)
 ;; maximize sccreen and windowSet frame transparency and maximize windows by default.
-  (add-to-list 'default-frame-alist '(alpha . (100 . 95)))
- (set-frame-parameter (selected-frame) 'alpha '(95 . 95))
+  (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
+ (set-frame-parameter (selected-frame) 'alpha '(88 . 90))
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
 (add-hook 'window-setup-hook 'toggle-frame-fullscreen t)
 (add-hook 'window-setup-hook 'toggle-frame-maximized t)
@@ -712,13 +713,13 @@ folder, otherwise delete a word"
                 (all-the-icons-dired-mode 1))
               (hl-line-mode 1)))
 
-  (evil-collection-define-key 'normal 'dired-mode-map
-    "h" 'dired-single-up-directory
-    "H" 'dired-omit-mode
-    "l" 'dired-single-buffer
-    "y" 'dired-ranger-copy
-    "X" 'dired-ranger-move
-    "p" 'dired-ranger-paste)
+  ;; (evil-collection-define-key 'normal 'dired-mode-map
+  ;;   "h" 'dired-single-up-directory
+  ;;   "H" 'dired-omit-mode
+  ;;   "l" 'dired-single-buffer
+  ;;   "y" 'dired-ranger-copy
+  ;;   "X" 'dired-ranger-move
+  ;;   "p" 'dired-ranger-paste)
 
 ;;(setup (:pkg dired-rainbow))
 ;;   (dired-rainbow-define-chmod directory "#6cb2eb" "d.*")
