@@ -138,6 +138,10 @@ installed via Guix.")
   :after evil
   :config
   (evil-collection-init))
+(use-package evil-matchit :ensure t :config (global-evil-matchit-mode 1))
+(use-package evil-surround :ensure t :config (global-evil-surround-mode 1))
+
+       
 ;; (evil-set-initial-state 'dired-mode 'emacs)
 ;; Set Emacs state modes
   ;; (dolist (mode '(custom-mode
@@ -168,6 +172,8 @@ installed via Guix.")
 ;;   (evil-set-undo-system 'undo-tree)
 ;;   (global-undo-tree-mode 1))
 (evil-set-undo-system 'undo-redo)
+
+ (setq evil-magit-state 'normal)
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
   (setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
   (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
