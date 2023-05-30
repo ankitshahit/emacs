@@ -4,7 +4,7 @@
 ;; -*- lexical-binding: t; -*-
 
 ;; The default is 800 kilobytes.  Measured in bytes.
-(setq gc-cons-threshold (* 50 1000 1000))
+(setq gc-cons-threshold (* 60 3000 3000))
 
 (unless (featurep 'straight)
   ;; Bootstrap straight.el
@@ -109,7 +109,11 @@ installed via Guix.")
           (expand-file-name "custom.el" server-socket-dir)
         (expand-file-name (format "emacs-custom-%s.el" (user-uid)) temporary-file-directory)))
 (load custom-file t)
-
+;; (setq initial-buffer-choice "g:/projects/start.html")
+(use-package dashboard
+  :ensure t
+  :config
+  (dashboard-setup-startup-hook))
 ;; ================== Evil package =========================
 (use-package evil
   :init
@@ -320,11 +324,11 @@ folder, otherwise delete a word"
   :config
   (ivy-mode 1))
 
-;; NOTE: The first time you load your configuration on a new machine, you'll
-;; need to run the following command interactively so that mode line icons
-;; display correctly:
-;;
-;; M-x all-the-icons-install-fonts
+;; ;; NOTE: The first time you load your configuration on a new machine, you'll
+;; ;; need to run the following command interactively so that mode line icons
+;; ;; display correctly:
+;; ;;
+;; ;; M-x all-the-icons-install-fonts
 
 (when (display-graphic-p)
   (require 'all-the-icons))
@@ -333,6 +337,9 @@ folder, otherwise delete a word"
   :if (display-graphic-p))
 (setq inhibit-compacting-font-caches t)
 
+(use-package ivy-rich
+  :init
+  (ivy-rich-mode 1))
 (use-package doom-modeline
   :ensure t
   :init (doom-modeline-mode 1)
@@ -343,9 +350,6 @@ folder, otherwise delete a word"
 
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
-(use-package ivy-rich
-  :init
-  (ivy-rich-mode 1))
 
 
 (setup (:require paren)
@@ -385,33 +389,72 @@ folder, otherwise delete a word"
 
   (rune/leader-keys
     "t"  '(:ignore t :which-key "toggles")
-    "tt" '(counsel-load-theme :which-key "choose theme")))
+    "tt" '(counsel-load-theme :which-key "choose theme")
+))
+;; ===================        ORG MODE ======================
+(setq org-agenda-files '("g:/projects/org-notes"))
+
+  (setq org-hide-emphasis-markers t)
+  (use-package org-bullets
+    :config
+    (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+  (let* ((variable-tuple
+          (cond ((x-list-fonts "ETBembo")         '(:font "ETBembo"))
+                ((x-list-fonts "Source Sans Pro") '(:font "Source Sans Pro"))
+                ((x-list-fonts "Lucida Grande")   '(:font "Lucida Grande"))
+                ((x-list-fonts "Verdana")         '(:font "Verdana"))
+                ((x-family-fonts "Sans Serif")    '(:family "Sans Serif"))
+                (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro."))))
+         (base-font-color     (face-foreground 'default nil 'default))
+         (headline           `(:inherit default :weight bold :foreground ,base-font-color)))
+
+    (custom-theme-set-faces
+     'user
+     `(org-level-8 ((t (,@headline ,@variable-tuple))))
+     `(org-level-7 ((t (,@headline ,@variable-tuple))))
+     `(org-level-6 ((t (,@headline ,@variable-tuple))))
+     `(org-level-5 ((t (,@headline ,@variable-tuple))))
+     `(org-level-4 ((t (,@headline ,@variable-tuple :height 1.1))))
+     `(org-level-3 ((t (,@headline ,@variable-tuple :height 1.25))))
+     `(org-level-2 ((t (,@headline ,@variable-tuple :height 1.5))))
+     `(org-level-1 ((t (,@headline ,@variable-tuple :height 1.75))))
+     `(org-document-title ((t (,@headline ,@variable-tuple :height 2.0 :underline nil))))))
+
+  (add-hook 'org-mode-hook 'variable-pitch-mode)
+(use-package org-jira :ensure t)
+;;(make-directory "~/.org-jira")
+(setq jiralib-url "https://falkondata.atlassian.net")
+
+
+
+;; ===================        End ORG MODE ======================
+
 ;; ================= LSP MODE ===================
-;;
-;;
-(use-package js
-  :ensure nil
-  :mode ("\\.js?\\'" . js2-mode)
-  :config
-  (setq js-indent-level 2)
-  (add-hook 'flycheck-mode-hook
-            #'(lambda ()
-                (let* ((root (locate-dominating-file
-                              (or (buffer-file-name) default-directory)
-                              "node_modules"))
-                       (eslint
-                        (and root
-                             (expand-file-name "node_modules/.bin/eslint"
-                                               root))))
-                  (when (and eslint (file-executable-p eslint))
-                    (setq-local flycheck-javascript-eslint-executable eslint))))))
 (use-package company-prescient
   :after (prescient company)
   :config
   (company-prescient-mode +1))
+(use-package terraform-mode
+  ;; if using straight
+  ;; :straight t
+
+  ;; if using package.el
+  ;; :ensure t
+  :custom (terraform-indent-level 4)
+  :config
+  (defun my-terraform-mode-init ()
+(setq terraform-format-on-save t )
+    ;; if you want to use outline-minor-mode
+    (outline-minor-mode 1)
+    )
+
+  (add-hook 'terraform-mode-hook 'my-terraform-mode-init))
+(use-package company-terraform :ensure t)
+(use-package terraform-doc :ensure t)
 (use-package lsp-mode
   :hook ((
          js-mode         ; ts-ls (tsserver wrapper)
+         js2-mode
           js-jsx-mode     ; ts-ls (tsserver wrapper)
           python-mode     ; mspyls
           web-mode
@@ -439,8 +482,8 @@ folder, otherwise delete a word"
   (setq lsp-enable-imenu t)
   (setq lsp-enable-snippet t)
   (setq lsp-enable-completion-at-point t)
-  (setq read-process-output-max (* 1024 2048)) ;; 1mb
-  (setq lsp-idle-delay 0)
+  (setq read-process-output-max (* 3072 3072)) ;; 1mb
+  (setq lsp-idle-delay 0.500)
   (setq lsp-prefer-capf t) ; prefer lsp's company-capf over company-lsp
 (setq lsp-language-id-configuration '((java-mode . "java")
                                       (python-mode . "python")
@@ -458,6 +501,7 @@ folder, otherwise delete a word"
                                       (go-mode . "go")
                                       (haskell-mode . "haskell")
                                       (php-mode . "php")
+                                      (terraform-mode . "terraform")
                                       (json-mode . "json")
                                       (javascript . "javascript")
                                       (typescript-mode . "typescript")))
@@ -467,11 +511,15 @@ folder, otherwise delete a word"
   ;; (define-key evil-innusert-state-map (kbd "S-<f6>") 'lsp-rename)
   ;; (define-key evil-normal-state-map (kbd "S-<f6>") 'lsp-rename)
 
-(add-hook 'js-mode-hook (
-                         lambda ()
-                                (add-hook 'before-save-hook 'lsp-organize-imports)))
+;; (add-hook 'js-mode-hook (
+;;                          lambda ()
+;;                                 (add-hook 'before-save-hook 'lsp-organize-imports)))
 (add-hook 'js-mode-hook #'lsp)
 (add-hook 'js2-mode-hook #'lsp)
+(add-hook 'terraform-mode-hook #'lsp)
+(add-hook 'python-mode-hook #'lsp)
+(add-hook 'java-mode-hook #'lsp)
+(add-hook 'json-mode-hook #'lsp)
 (advice-add 'json-parse-buffer :around
               (lambda (orig &rest rest)
                 (save-excursion
@@ -483,6 +531,7 @@ folder, otherwise delete a word"
 (use-package js-mode
   :ensure nil
   :mode (("\\.js?\\'" . js-mode)
+        ("\\.js?\\'" . js2-mode)
          ("\\.jsx?\\'" . js-mode))
   :config
   (setq javascript-indent-level 2)
@@ -542,7 +591,7 @@ folder, otherwise delete a word"
         lsp-ui-doc-position 'at-point
         lsp-ui-doc-show-with-cursor t))
 
-
+(setq lsp-log-io nil)
 
 (use-package prettier-js
  :ensure t
@@ -643,10 +692,21 @@ folder, otherwise delete a word"
   (define-key evil-window-map "u" 'winner-undo)
   (define-key evil-window-map "U" 'winner-redo))
 
+(setup (:pkg olivetti))
 (setup (:pkg visual-fill-column)
-  (setq visual-fill-column-width 110
+  (setq visual-fill-column-width 120
         visual-fill-column-center-text t)
-  (:hook-into org-mode))
+  (:hook-into org-mode)
+  (:hook-into text-mode)
+  (:hook-into lisp-mode)
+  (:hook-into hs-minor-mode)
+  (:hook-into js-mode)
+  (:hook-into js2-mode)
+  (:hook-into js-jsx-mode)
+  (:hook-into python-mode)
+  (:hook-into terraform-mode)
+
+)
 
 (setq display-buffer-base-action
       '(display-buffer-reuse-mode-window
