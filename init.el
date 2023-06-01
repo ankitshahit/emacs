@@ -392,35 +392,81 @@ folder, otherwise delete a word"
     "tt" '(counsel-load-theme :which-key "choose theme")
 ))
 ;; ===================        ORG MODE ======================
-(setq org-agenda-files '("g:/projects/org-notes"))
+;;(setq org-agenda-files '("g:/projects/org-notes"))
+;;
+  ;;(setq org-hide-emphasis-markers t)
+  ;;(use-package org-bullets
+    ;;:config
+    ;;(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+  ;;(let* ((variable-tuple
+          ;;(cond ((x-list-fonts "ETBembo")         '(:font "ETBembo"))
+                ;;((x-list-fonts "Source Sans Pro") '(:font "Source Sans Pro"))
+                ;;((x-list-fonts "Lucida Grande")   '(:font "Lucida Grande"))
+                ;;((x-list-fonts "Verdana")         '(:font "Verdana"))
+                ;;((x-family-fonts "Sans Serif")    '(:family "Sans Serif"))
+                ;;(nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro."))))
+         ;;(base-font-color     (face-foreground 'default nil 'default))
+         ;;(headline           `(:inherit default :weight bold :foreground ,base-font-color)))
+;;
+    ;;(custom-theme-set-faces
+     ;;'user
+     ;;`(org-level-8 ((t (,@headline ,@variable-tuple))))
+     ;;`(org-level-7 ((t (,@headline ,@variable-tuple))))
+     ;;`(org-level-6 ((t (,@headline ,@variable-tuple))))
+     ;;`(org-level-5 ((t (,@headline ,@variable-tuple))))
+     ;;`(org-level-4 ((t (,@headline ,@variable-tuple :height 1.1))))
+     ;;`(org-level-3 ((t (,@headline ,@variable-tuple :height 1.25))))
+     ;;`(org-level-2 ((t (,@headline ,@variable-tuple :height 1.5))))
+     ;;`(org-level-1 ((t (,@headline ,@variable-tuple :height 1.75))))
+     ;;`(org-document-title ((t (,@headline ,@variable-tuple :height 2.0 :underline nil))))))
+;;
+  ;;(add-hook 'org-mode-hook 'variable-pitch-mode)
+(use-package org-modern :config
+(add-hook 'org-mode-hook #'org-modern-mode)
+(add-hook 'org-agenda-finalize-hook #'org-modern-agenda)
+)
 
-  (setq org-hide-emphasis-markers t)
-  (use-package org-bullets
-    :config
-    (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
-  (let* ((variable-tuple
-          (cond ((x-list-fonts "ETBembo")         '(:font "ETBembo"))
-                ((x-list-fonts "Source Sans Pro") '(:font "Source Sans Pro"))
-                ((x-list-fonts "Lucida Grande")   '(:font "Lucida Grande"))
-                ((x-list-fonts "Verdana")         '(:font "Verdana"))
-                ((x-family-fonts "Sans Serif")    '(:family "Sans Serif"))
-                (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro."))))
-         (base-font-color     (face-foreground 'default nil 'default))
-         (headline           `(:inherit default :weight bold :foreground ,base-font-color)))
+;; Choose some fonts
+;; (set-face-attribute 'default nil :family "Iosevka")
+;; (set-face-attribute 'variable-pitch nil :family "Iosevka Aile")
+;; (set-face-attribute 'org-modern-symbol nil :family "Iosevka")
 
-    (custom-theme-set-faces
-     'user
-     `(org-level-8 ((t (,@headline ,@variable-tuple))))
-     `(org-level-7 ((t (,@headline ,@variable-tuple))))
-     `(org-level-6 ((t (,@headline ,@variable-tuple))))
-     `(org-level-5 ((t (,@headline ,@variable-tuple))))
-     `(org-level-4 ((t (,@headline ,@variable-tuple :height 1.1))))
-     `(org-level-3 ((t (,@headline ,@variable-tuple :height 1.25))))
-     `(org-level-2 ((t (,@headline ,@variable-tuple :height 1.5))))
-     `(org-level-1 ((t (,@headline ,@variable-tuple :height 1.75))))
-     `(org-document-title ((t (,@headline ,@variable-tuple :height 2.0 :underline nil))))))
+;; Add frame borders and window dividers
+(modify-all-frames-parameters
+ '((right-divider-width . 40)
+   (internal-border-width . 40)))
+(dolist (face '(window-divider
+                window-divider-first-pixel
+                window-divider-last-pixel))
+  (face-spec-reset-face face)
+  (set-face-foreground face (face-attribute 'default :background)))
+(set-face-background 'fringe (face-attribute 'default :background))
 
-  (add-hook 'org-mode-hook 'variable-pitch-mode)
+(setq
+ ;; Edit settings
+ org-auto-align-tags nil
+ org-tags-column 0
+ org-catch-invisible-edits 'show-and-error
+ org-special-ctrl-a/e t
+ org-insert-heading-respect-content t
+
+ ;; Org styling, hide markup etc.
+ org-hide-emphasis-markers t
+ org-pretty-entities t
+ org-ellipsis "…"
+
+ ;; Agenda styling
+ org-agenda-tags-column 0
+ org-agenda-block-separator ?─
+ org-agenda-time-grid
+ '((daily today require-timed)
+   (800 1000 1200 1400 1600 1800 2000)
+   " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+ org-agenda-current-time-string
+ "⭠ now ─────────────────────────────────────────────────")
+
+(global-org-modern-mode)
+
 (use-package org-jira :ensure t)
 ;;(make-directory "~/.org-jira")
 (setq jiralib-url "https://falkondata.atlassian.net")
@@ -450,6 +496,10 @@ folder, otherwise delete a word"
 
   (add-hook 'terraform-mode-hook 'my-terraform-mode-init))
 (use-package company-terraform :ensure t)
+(use-package flycheck-posframe
+  :ensure t
+  :after flycheck
+  :config (add-hook 'flycheck-mode-hook #'flycheck-posframe-mode))
 (use-package terraform-doc :ensure t)
 (use-package lsp-mode
   :hook ((
@@ -462,7 +512,6 @@ folder, otherwise delete a word"
           ) . lsp)
   :commands lsp
   :config
-:disabled
   (setq lsp-auto-guess-root t)
   (setq lsp-diagnostic-package :none)             ; disable flycheck-lsp for most modes
   (add-hook 'web-mode-hook #'lsp-flycheck-enable) ; enable flycheck-lsp for web-mode locally
@@ -483,7 +532,7 @@ folder, otherwise delete a word"
   (setq lsp-enable-snippet t)
   (setq lsp-enable-completion-at-point t)
   (setq read-process-output-max (* 3072 3072)) ;; 1mb
-  (setq lsp-idle-delay 0.500)
+  (setq lsp-idle-delay 0)
   (setq lsp-prefer-capf t) ; prefer lsp's company-capf over company-lsp
 (setq lsp-language-id-configuration '((java-mode . "java")
                                       (python-mode . "python")
@@ -554,7 +603,7 @@ folder, otherwise delete a word"
     (define-key company-active-map (kbd "C-j") nil) ; avoid conflict with emmet-mode
     (define-key company-active-map (kbd "C-n") #'company-select-next)
     (define-key company-active-map (kbd "C-p") #'company-select-previous)))
-(setq company-minimum-prefix-length 1
+(setq
       company-idle-delay 0.0) ;; default is 0.2
  (global-company-mode 1)
 (use-package company-restclient
@@ -692,7 +741,6 @@ folder, otherwise delete a word"
   (define-key evil-window-map "u" 'winner-undo)
   (define-key evil-window-map "U" 'winner-redo))
 
-(setup (:pkg olivetti))
 (setup (:pkg visual-fill-column)
   (setq visual-fill-column-width 120
         visual-fill-column-center-text t)
