@@ -4,7 +4,7 @@
 ;; -*- lexical-binding: t; -*-
 
 ;; The default is 800 kilobytes.  Measured in bytes.
-(setq gc-cons-threshold (* 60 3000 3000))
+(setq gc-cons-threshold (* 50 1000 1000))
 
 (unless (featurep 'straight)
   ;; Bootstrap straight.el
@@ -109,11 +109,13 @@ installed via Guix.")
           (expand-file-name "custom.el" server-socket-dir)
         (expand-file-name (format "emacs-custom-%s.el" (user-uid)) temporary-file-directory)))
 (load custom-file t)
-;; (setq initial-buffer-choice "g:/projects/start.html")
+
 (use-package dashboard
   :ensure t
   :config
   (dashboard-setup-startup-hook))
+
+
 ;; ================== Evil package =========================
 (use-package evil
   :init
@@ -145,7 +147,7 @@ installed via Guix.")
 (use-package evil-matchit :ensure t :config (global-evil-matchit-mode 1))
 (use-package evil-surround :ensure t :config (global-evil-surround-mode 1))
 
-       
+
 ;; (evil-set-initial-state 'dired-mode 'emacs)
 ;; Set Emacs state modes
   ;; (dolist (mode '(custom-mode
@@ -324,11 +326,11 @@ folder, otherwise delete a word"
   :config
   (ivy-mode 1))
 
-;; ;; NOTE: The first time you load your configuration on a new machine, you'll
-;; ;; need to run the following command interactively so that mode line icons
-;; ;; display correctly:
-;; ;;
-;; ;; M-x all-the-icons-install-fonts
+;; NOTE: The first time you load your configuration on a new machine, you'll
+;; need to run the following command interactively so that mode line icons
+;; display correctly:
+;;
+;; M-x all-the-icons-install-fonts
 
 (when (display-graphic-p)
   (require 'all-the-icons))
@@ -337,9 +339,6 @@ folder, otherwise delete a word"
   :if (display-graphic-p))
 (setq inhibit-compacting-font-caches t)
 
-(use-package ivy-rich
-  :init
-  (ivy-rich-mode 1))
 (use-package doom-modeline
   :ensure t
   :init (doom-modeline-mode 1)
@@ -350,6 +349,9 @@ folder, otherwise delete a word"
 
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
+(use-package ivy-rich
+  :init
+  (ivy-rich-mode 1))
 
 
 (setup (:require paren)
@@ -389,48 +391,180 @@ folder, otherwise delete a word"
 
   (rune/leader-keys
     "t"  '(:ignore t :which-key "toggles")
-    "tt" '(counsel-load-theme :which-key "choose theme")
-))
-;; ===================        ORG MODE ======================
-;;(setq org-agenda-files '("g:/projects/org-notes"))
+    "tt" '(counsel-load-theme :which-key "choose theme")))
+;; ================= LSP MODE ===================
 ;;
-  ;;(setq org-hide-emphasis-markers t)
-  ;;(use-package org-bullets
-    ;;:config
-    ;;(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
-  ;;(let* ((variable-tuple
-          ;;(cond ((x-list-fonts "ETBembo")         '(:font "ETBembo"))
-                ;;((x-list-fonts "Source Sans Pro") '(:font "Source Sans Pro"))
-                ;;((x-list-fonts "Lucida Grande")   '(:font "Lucida Grande"))
-                ;;((x-list-fonts "Verdana")         '(:font "Verdana"))
-                ;;((x-family-fonts "Sans Serif")    '(:family "Sans Serif"))
-                ;;(nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro."))))
-         ;;(base-font-color     (face-foreground 'default nil 'default))
-         ;;(headline           `(:inherit default :weight bold :foreground ,base-font-color)))
 ;;
-    ;;(custom-theme-set-faces
-     ;;'user
-     ;;`(org-level-8 ((t (,@headline ,@variable-tuple))))
-     ;;`(org-level-7 ((t (,@headline ,@variable-tuple))))
-     ;;`(org-level-6 ((t (,@headline ,@variable-tuple))))
-     ;;`(org-level-5 ((t (,@headline ,@variable-tuple))))
-     ;;`(org-level-4 ((t (,@headline ,@variable-tuple :height 1.1))))
-     ;;`(org-level-3 ((t (,@headline ,@variable-tuple :height 1.25))))
-     ;;`(org-level-2 ((t (,@headline ,@variable-tuple :height 1.5))))
-     ;;`(org-level-1 ((t (,@headline ,@variable-tuple :height 1.75))))
-     ;;`(org-document-title ((t (,@headline ,@variable-tuple :height 2.0 :underline nil))))))
-;;
-  ;;(add-hook 'org-mode-hook 'variable-pitch-mode)
-(use-package org-modern :config
-(add-hook 'org-mode-hook #'org-modern-mode)
-(add-hook 'org-agenda-finalize-hook #'org-modern-agenda)
+(use-package flycheck-posframe
+  :ensure t
+  :after flycheck
+  :config (add-hook 'flycheck-mode-hook #'flycheck-posframe-mode))
+(use-package js
+  :ensure nil
+  :mode ("\\.js?\\'" . js2-mode)
+  :config
+  (setq js-indent-level 2)
+  (add-hook 'flycheck-mode-hook
+            #'(lambda ()
+                (let* ((root (locate-dominating-file
+                              (or (buffer-file-name) default-directory)
+                              "node_modules"))
+                       (eslint
+                        (and root
+                             (expand-file-name "node_modules/.bin/eslint"
+                                               root))))
+                  (when (and eslint (file-executable-p eslint))
+                    (setq-local flycheck-javascript-eslint-executable eslint))))))
+(use-package company-prescient
+  :after (prescient company)
+  :config
+  (company-prescient-mode +1))
+(use-package lsp-mode
+  :init (add-to-list 'company-backends 'company-capf)
+  :hook ((
+         js-mode         ; ts-ls (tsserver wrapper)
+          js-jsx-mode     ; ts-ls (tsserver wrapper)
+          python-mode     ; mspyls
+          web-mode
+          js2-mode
+          ) . lsp)
+  :commands lsp
+  :config
+  (setq lsp-auto-guess-root t)
+  (setq lsp-diagnostic-package :none)             ; disable flycheck-lsp for most modes
+  (add-hook 'web-mode-hook #'lsp-flycheck-enable) ; enable flycheck-lsp for web-mode locally
+  (setq lsp-enable-symbol-highlighting t)
+(with-eval-after-load 'lsp-mode
+  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
+  (setq lsp-javascript-display-enum-member-value-hints t)
+  (setq lsp-enable-on-type-formatting t)
+  (setq lsp-javascript-format-insert-space-after-constructor t)
+
+  (setq lsp-javascript-suggest-complete-function-calls t)
+  (setq lsp-javascript-format-insert-space-after-opening-and-before-closing-empty-braces t)
+  (setq lsp-signature-auto-activate t)
+  (setq lsp-modeline-code-actions-enable t)
+  (setq lsp-modeline-diagnostics-enable t)
+  (setq lsp-enable-folding t)
+  (setq lsp-enable-imenu t)
+  (setq lsp-enable-snippet t)
+  (setq lsp-enable-completion-at-point t)
+  (setq read-process-output-max (* 1024 2048)) ;; 1mb
+  (setq lsp-idle-delay 0)
+  (setq lsp-prefer-capf t) ; prefer lsp's company-capf over company-lsp
+(setq lsp-language-id-configuration '((java-mode . "java")
+                                      (python-mode . "python")
+                                      (gfm-view-mode . "markdown")
+                                      (rust-mode . "rust")
+                                      (css-mode . "css")
+                                      (xml-mode . "xml")
+                                      (c-mode . "c")
+                                      (c++-mode . "cpp")
+                                      (objc-mode . "objective-c")
+                                      (web-mode . "html")
+                                      (html-mode . "html")
+                                      (sgml-mode . "html")
+                                      (mhtml-mode . "html")
+                                      (go-mode . "go")
+                                      (haskell-mode . "haskell")
+                                      (php-mode . "php")
+                                      (json-mode . "json")
+                                      (javascript . "javascript")
+                                      (typescript-mode . "typescript")))
+  (define-key evil-normal-state-map (kbd "g d") 'lsp-goto-implementation)
+  (define-key evil-normal-state-map (kbd "g t") 'lsp-goto-type-definition))
+
+  ;; (define-key evil-innusert-state-map (kbd "S-<f6>") 'lsp-rename)
+  ;; (define-key evil-normal-state-map (kbd "S-<f6>") 'lsp-rename)
+
+(add-hook 'js-mode-hook (
+                         lambda ()
+                                (add-hook 'before-save-hook 'lsp-organize-imports)))
+(add-hook 'js-mode-hook #'lsp)
+(add-hook 'js2-mode-hook #'lsp)
+(advice-add 'json-parse-buffer :around
+              (lambda (orig &rest rest)
+                (save-excursion
+                  (while (re-search-forward "\\\\u0000" nil t)
+                    (replace-match "")))
+                (apply orig rest)))
+  ;; (add-to-list 'lsp-language-id-configuration '(js-jsx-mode . "javascriptreact")))
+
+(use-package js-mode
+  :ensure nil
+  :mode (("\\.js?\\'" . js-mode)
+         ("\\.jsx?\\'" . js-mode))
+  :config
+  (setq javascript-indent-level 2)
+  (setq js-indent-level 2))
+
+(use-package company
+  :hook (prog-mode . company-mode)
+  :bind ("TAB" . company-complete)
+  :config
+ (setq company-require-match nil
+        company-show-numbers t
+        company-selection-wrap-around t)
+
+  (setq company-minimum-prefix-length 1)
+  (setq company-selection-wrap-around t)
+  (setq company-tooltip-align-annotations t)
+  (setq company-frontends '(company-pseudo-tooltip-frontend ; show tooltip even for single candidate
+                            company-echo-metadata-frontend))
+  (with-eval-after-load 'company
+    (define-key company-active-map (kbd "C-j") nil) ; avoid conflict with emmet-mode
+    (define-key company-active-map (kbd "C-n") #'company-select-next)
+    (define-key company-active-map (kbd "C-p") #'company-select-previous)))
+(setq company-minimum-prefix-length 1
+      company-idle-delay 0.0) ;; default is 0.2
+ (global-company-mode 1)
+(use-package company-restclient
+  :defer t
+  :after company)
+
+(use-package company-web
+  :defer t
+  :after (web-mode company))
+(use-package flycheck
+  :hook ((prog-mode . flycheck-mode))
+  :config
+  (setq flycheck-check-syntax-automatically '(save mode-enabled newline))
+  (setq flycheck-display-errors-delay 0.1))
+(use-package rjsx-mode
+  :ensure t
+  :config
+  (add-to-list 'auto-mode-alist '("components\/.*\.js\'" . rjsx-mode))
+  (add-to-list 'auto-mode-alist '("pages\/.*\.js\'" . rjsx-mode)))
+
+
+
+(with-eval-after-load 'js
+  (setq js-indent-level 2)
+  (define-key js-mode-map (kbd "M-.") nil))
+
+(use-package lsp-ui
+  :after lsp-mode
+  :config
+  (setq lsp-ui-doc-enable t
+        lsp-ui-peek-enable t
+        lsp-ui-sideline-enable t
+        lsp-ui-doc-include-signature t
+        lsp-ui-doc-position 'at-point
+        lsp-ui-doc-show-with-cursor t))
+
+
+
+(use-package prettier-js
+ :ensure t
+ :config
+ (add-hook 'js-mode-hook #'prettier-js-mode)
+ (add-hook 'typescript-mode-hook #'prettier-js-mode)
 )
 
-;; Choose some fonts
-;; (set-face-attribute 'default nil :family "Iosevka")
-;; (set-face-attribute 'variable-pitch nil :family "Iosevka Aile")
-;; (set-face-attribute 'org-modern-symbol nil :family "Iosevka")
-
+;; ================== End LSP MODE ===============
+;; ==================  org MODE ===============
+(add-hook 'org-mode-hook #'org-modern-mode)
+(add-hook 'org-agenda-finalize-hook #'org-modern-agenda)
 ;; Add frame borders and window dividers
 (modify-all-frames-parameters
  '((right-divider-width . 40)
@@ -468,188 +602,8 @@ folder, otherwise delete a word"
 (global-org-modern-mode)
 
 (use-package org-jira :ensure t)
-;;(make-directory "~/.org-jira")
 (setq jiralib-url "https://falkondata.atlassian.net")
-
-
-
-;; ===================        End ORG MODE ======================
-
-;; ================= LSP MODE ===================
-(use-package company-prescient
-  :after (prescient company)
-  :config
-  (company-prescient-mode +1))
-(use-package terraform-mode
-  ;; if using straight
-  ;; :straight t
-
-  ;; if using package.el
-  ;; :ensure t
-  :custom (terraform-indent-level 4)
-  :config
-  (defun my-terraform-mode-init ()
-(setq terraform-format-on-save t )
-    ;; if you want to use outline-minor-mode
-    (outline-minor-mode 1)
-    )
-
-  (add-hook 'terraform-mode-hook 'my-terraform-mode-init))
-(use-package company-terraform :ensure t)
-(use-package flycheck-posframe
-  :ensure t
-  :after flycheck
-  :config (add-hook 'flycheck-mode-hook #'flycheck-posframe-mode))
-(use-package terraform-doc :ensure t)
-(use-package lsp-mode
-  :hook ((
-         js-mode         ; ts-ls (tsserver wrapper)
-         js2-mode
-          js-jsx-mode     ; ts-ls (tsserver wrapper)
-          python-mode     ; mspyls
-          web-mode
-          js2-mode
-          ) . lsp)
-  :commands lsp
-  :config
-  (setq lsp-auto-guess-root t)
-  (setq lsp-diagnostic-package :none)             ; disable flycheck-lsp for most modes
-  (add-hook 'web-mode-hook #'lsp-flycheck-enable) ; enable flycheck-lsp for web-mode locally
-  (setq lsp-enable-symbol-highlighting t)
-(with-eval-after-load 'lsp-mode
-  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
-  (setq lsp-javascript-display-enum-member-value-hints t)
-  (setq lsp-enable-on-type-formatting t)
-  (setq lsp-javascript-format-insert-space-after-constructor t)
-
-  (setq lsp-javascript-suggest-complete-function-calls t)
-  (setq lsp-javascript-format-insert-space-after-opening-and-before-closing-empty-braces t)
-  (setq lsp-signature-auto-activate t)
-  (setq lsp-modeline-code-actions-enable t)
-  (setq lsp-modeline-diagnostics-enable t)
-  (setq lsp-enable-folding t)
-  (setq lsp-enable-imenu t)
-  (setq lsp-enable-snippet t)
-  (setq lsp-enable-completion-at-point t)
-  (setq read-process-output-max (* 3072 3072)) ;; 1mb
-  (setq lsp-idle-delay 0)
-  (setq lsp-prefer-capf t) ; prefer lsp's company-capf over company-lsp
-(setq lsp-language-id-configuration '((java-mode . "java")
-                                      (python-mode . "python")
-                                      (gfm-view-mode . "markdown")
-                                      (rust-mode . "rust")
-                                      (css-mode . "css")
-                                      (xml-mode . "xml")
-                                      (c-mode . "c")
-                                      (c++-mode . "cpp")
-                                      (objc-mode . "objective-c")
-                                      (web-mode . "html")
-                                      (html-mode . "html")
-                                      (sgml-mode . "html")
-                                      (mhtml-mode . "html")
-                                      (go-mode . "go")
-                                      (haskell-mode . "haskell")
-                                      (php-mode . "php")
-                                      (terraform-mode . "terraform")
-                                      (json-mode . "json")
-                                      (javascript . "javascript")
-                                      (typescript-mode . "typescript")))
-  (define-key evil-normal-state-map (kbd "g d") 'lsp-goto-implementation)
-  (define-key evil-normal-state-map (kbd "g t") 'lsp-goto-type-definition))
-
-  ;; (define-key evil-innusert-state-map (kbd "S-<f6>") 'lsp-rename)
-  ;; (define-key evil-normal-state-map (kbd "S-<f6>") 'lsp-rename)
-
-;; (add-hook 'js-mode-hook (
-;;                          lambda ()
-;;                                 (add-hook 'before-save-hook 'lsp-organize-imports)))
-(add-hook 'js-mode-hook #'lsp)
-(add-hook 'js2-mode-hook #'lsp)
-(add-hook 'terraform-mode-hook #'lsp)
-(add-hook 'python-mode-hook #'lsp)
-(add-hook 'java-mode-hook #'lsp)
-(add-hook 'json-mode-hook #'lsp)
-(advice-add 'json-parse-buffer :around
-              (lambda (orig &rest rest)
-                (save-excursion
-                  (while (re-search-forward "\\\\u0000" nil t)
-                    (replace-match "")))
-                (apply orig rest)))
-  ;; (add-to-list 'lsp-language-id-configuration '(js-jsx-mode . "javascriptreact")))
-
-(use-package js-mode
-  :ensure nil
-  :mode (("\\.js?\\'" . js-mode)
-        ("\\.js?\\'" . js2-mode)
-         ("\\.jsx?\\'" . js-mode))
-  :config
-  (setq javascript-indent-level 2)
-  (setq js-indent-level 2))
-
-(use-package company
-  :hook (prog-mode . company-mode)
-  :bind ("TAB" . company-complete)
-  :config
- (setq company-require-match nil
-        company-show-numbers t
-        company-selection-wrap-around t)
-
-  (setq company-minimum-prefix-length 1)
-  (setq company-selection-wrap-around t)
-  (setq company-tooltip-align-annotations t)
-  (setq company-frontends '(company-pseudo-tooltip-frontend ; show tooltip even for single candidate
-                            company-echo-metadata-frontend))
-  (with-eval-after-load 'company
-    (define-key company-active-map (kbd "C-j") nil) ; avoid conflict with emmet-mode
-    (define-key company-active-map (kbd "C-n") #'company-select-next)
-    (define-key company-active-map (kbd "C-p") #'company-select-previous)))
-(setq
-      company-idle-delay 0.0) ;; default is 0.2
- (global-company-mode 1)
-(use-package company-restclient
-  :defer t
-  :after company)
-
-(use-package company-web
-  :defer t
-  :after (web-mode company))
-(use-package flycheck
-  :hook ((prog-mode . flycheck-mode))
-  :config
-  (setq flycheck-check-syntax-automatically '(save mode-enabled newline))
-  (setq flycheck-display-errors-delay 0.1))
-(use-package rjsx-mode
-  :ensure t
-  :config
-  (add-to-list 'auto-mode-alist '("components\/.*\.js\'" . rjsx-mode))
-  (add-to-list 'auto-mode-alist '("pages\/.*\.js\'" . rjsx-mode)))
-
-
-
-(with-eval-after-load 'js
-  (setq js-indent-level 2)
-  (define-key js-mode-map (kbd "M-.") nil))
-
-(use-package lsp-ui
-  :after lsp-mode
-  :config
-  (setq lsp-ui-doc-enable t
-        lsp-ui-peek-enable t
-        lsp-ui-sideline-enable t
-        lsp-ui-doc-include-signature t
-        lsp-ui-doc-position 'at-point
-        lsp-ui-doc-show-with-cursor t))
-
-(setq lsp-log-io nil)
-
-(use-package prettier-js
- :ensure t
- :config
- (add-hook 'js-mode-hook #'prettier-js-mode)
- (add-hook 'typescript-mode-hook #'prettier-js-mode)
-)
-
-;; ================== End LSP MODE ===============
+;; ================== End org MODE ===============
 (use-package hydra)
 
 (defhydra hydra-text-scale (:timeout 4)
@@ -745,6 +699,7 @@ folder, otherwise delete a word"
   (setq visual-fill-column-width 120
         visual-fill-column-center-text t)
   (:hook-into org-mode)
+
   (:hook-into text-mode)
   (:hook-into lisp-mode)
   (:hook-into hs-minor-mode)
@@ -753,7 +708,7 @@ folder, otherwise delete a word"
   (:hook-into js-jsx-mode)
   (:hook-into python-mode)
   (:hook-into terraform-mode)
-
+                                                                  
 )
 
 (setq display-buffer-base-action
@@ -1048,11 +1003,6 @@ folder, otherwise delete a word"
   (add-hook 'eshell-first-time-mode-hook #'dw/eshell-configure)
   (setq eshell-directory-name "~/.dotfiles/.emacs.d/eshell/"
         eshell-aliases-file (expand-file-name "~/.dotfiles/.emacs.d/eshell/alias")))
-
-;; (setup (:pkg eshell-z)
-;;   (:disabled) ;; Using consult-dir for this now
-;;   (add-hook 'eshell-mode-hook (lambda () (require 'eshell-z)))
-;;   (add-hook 'eshell-z-change-dir-hook (lambda () (eshell/pushd (eshell/pwd);;))))
 
 (setup (:pkg exec-path-from-shell)
   (setq exec-path-from-shell-check-startup-files nil)
