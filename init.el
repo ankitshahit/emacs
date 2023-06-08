@@ -1,11 +1,9 @@
 ;; You will most likely need to adjust this font size for your system!
 (defvar runemacs/default-font-size 100)
 
+(setq gc-cons-threshold (* 100 1024 1024))
 ;; -*- lexical-binding: t; -*-
-
 ;; The default is 800 kilobytes.  Measured in bytes.
-(setq gc-cons-threshold (* 50 1000 1000))
-
 (unless (featurep 'straight)
   ;; Bootstrap straight.el
   (defvar bootstrap-version)
@@ -44,7 +42,11 @@
 
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
                          ("org" . "https://orgmode.org/elpa/")
-                         ("elpa" . "https://elpa.gnu.org/packages/")))
+                         ("elpa" . "https://elpa.gnu.org/packages/")
+   ("org-contrib" . "https://elpa.nongnu.org/nongnu/")
+
+
+))
 
 (package-initialize)
 (unless package-archive-contents
@@ -109,7 +111,30 @@ installed via Guix.")
           (expand-file-name "custom.el" server-socket-dir)
         (expand-file-name (format "emacs-custom-%s.el" (user-uid)) temporary-file-directory)))
 (load custom-file t)
+(use-package gcmh
+:config
+(gcmh-mode 1)
+)
 
+(use-package vlf)
+(defun my-find-file-check-make-large-file-read-only-hook ()
+  "If a file is over a given size, make the buffer read only."
+  (when (> (buffer-size) (* 10 1024 1024))
+    (setq buffer-read-only t)
+    (buffer-disable-undo)
+    (fundamental-mode)
+    ; (message "Buffer is set to read-only because it is large.  Undo also disabled.")
+    ))
+
+(add-hook 'find-file-hook 'my-find-file-check-make-large-file-read-only-hook)
+ (add-hook 'so-long-hook 'my-so-long-hook)
+ (defun my-so-long-hook ()
+   "Used in `so-long-hook'."
+   ;; Disable the old `idle-highlight' (pre-`idle-highlight-mode')
+   (when (bound-and-true-p idle-highlight-timer)
+     (cancel-timer idle-highlight-timer)
+     (setq idle-highlight-timer nil)))
+ (global-so-long-mode 1)
 (use-package dashboard
   :ensure t
   :config
@@ -123,10 +148,10 @@ installed via Guix.")
   (setq evil-want-keybinding nil)
   (setq evil-want-C-u-scroll t)
   (setq evil-want-minibuffer t)
-
-  (setq evil-want-C-i-jump nil)
+(setq evil-want-fine-undo t)
+ (setq evil-undo-system 'undo-fu)
   :config
-  (evil-mode 1)
+  (setq evil-want-C-i-jump nil)
   (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
   (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
 
@@ -135,7 +160,11 @@ installed via Guix.")
   (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
 
   (evil-set-initial-state 'messages-buffer-mode 'normal)
-  (evil-set-initial-state 'dashboard-mode 'normal))
+  (evil-set-initial-state 'dashboard-mode 'normal
+
+)(evil-mode 1))
+
+(use-package undo-fu)
 
   (setq evil-want-keybinding nil)
 (use-package evil-collection
@@ -148,13 +177,7 @@ installed via Guix.")
 (use-package evil-surround :ensure t :config (global-evil-surround-mode 1))
 
 
-;; (evil-set-initial-state 'dired-mode 'emacs)
-;; Set Emacs state modes
-  ;; (dolist (mode '(custom-mode
-  ;;                 treemacs-mode
-  ;;                 term-mode))
-  ;;   (add-to-list 'evil-emacs-state-modes mode))
-    (defun dw/dont-arrow-me-bro ()
+(defun dw/dont-arrow-me-bro ()
       (interactive)
       (message "Arrow keys are bad, you know?"))
   ;; Disable arrow keys in normal and visual modes
@@ -170,14 +193,8 @@ installed via Guix.")
   (evil-set-initial-state 'messages-buffer-mode 'normal)
   (evil-set-initial-state 'dashboard-mode 'normal)
 (setq evil-want-fine-undo t)
-;; (use-package undo-tree
-;;   :ensure t
-;;   :after evil
-;;   :diminish
-;;   :config
-;;   (evil-set-undo-system 'undo-tree)
-;;   (global-undo-tree-mode 1))
-(evil-set-undo-system 'undo-redo)
+(define-key evil-normal-state-map (kbd "TAB") 'tab-to-tab-stop)
+
 
  (setq evil-magit-state 'normal)
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
@@ -382,23 +399,41 @@ folder, otherwise delete a word"
   ([remap describe-variable] . counsel-describe-variable)
   ([remap describe-key] . helpful-key))
 
+(defun my-lsp-command-map ()
+  "Wrapper function for lsp-command-map."
+  (interactive)
+  (call-interactively 'lsp-command-map))
 (use-package general
   :config
   (general-create-definer rune/leader-keys
-    :keymaps '(normal insert visual emacs)
+    :keymaps '(normal insert visual  emacs lsp-mode-map)
     :prefix "SPC"
     :global-prefix "C-SPC")
 
   (rune/leader-keys
     "t"  '(:ignore t :which-key "toggles")
-    "tt" '(counsel-load-theme :which-key "choose theme")))
+    "es" '(eshell :which-key "eshell")
+    "mm" '(magit :which-key "magit")
+    "se" '(setenv :which-key "set env")
+    "c" '(:ignore :which-key "Compiler commands")
+    "cc" '(compile :which-key "Compile")
+    "cr" '(recompile :which-key "recompile")
+    "b" '(eval-buffer :which-key "Eval buffer")
+    "l" '(:ignore :which-key "lsp commands")
+    "lr" '(lsp-rename :which-key "lsp rename")
+    "ljr" '( lsp-organize-imports :which-key "lsp javascript rename files")
+    "lo" '( lsp-organize-imports :which-key "lsp organize imports")
+    "lt" '(lsp-goto-type-definition :which-key "lsp goto type definition")
+    "ld" '(lsp-goto-implementation :which-key "lsp goto definition")
+    "lws" '(lsp-workspace-shutdown :which-key "lsp workspace shutdown")
+    "lwr" '(lsp-workspace-restart :which-key "lsp workspace restart")
+))
+  
+
 ;; ================= LSP MODE ===================
 ;;
 ;;
-(use-package flycheck-posframe
-  :ensure t
-  :after flycheck
-  :config (add-hook 'flycheck-mode-hook #'flycheck-posframe-mode))
+(setq compile-command "")
 (use-package js
   :ensure nil
   :mode ("\\.js?\\'" . js2-mode)
@@ -419,8 +454,12 @@ folder, otherwise delete a word"
   :after (prescient company)
   :config
   (company-prescient-mode +1))
+(require `company)
+(setq lsp-keymap-prefix "C-c l")
+
 (use-package lsp-mode
   :init (add-to-list 'company-backends 'company-capf)
+  :bind ("C-c l" . lsp-command-map)
   :hook ((
          js-mode         ; ts-ls (tsserver wrapper)
           js-jsx-mode     ; ts-ls (tsserver wrapper)
@@ -433,6 +472,8 @@ folder, otherwise delete a word"
   (setq lsp-auto-guess-root t)
   (setq lsp-diagnostic-package :none)             ; disable flycheck-lsp for most modes
   (add-hook 'web-mode-hook #'lsp-flycheck-enable) ; enable flycheck-lsp for web-mode locally
+  (add-hook 'js-mode-hook #'lsp-flycheck-enable) ; enable flycheck-lsp for web-mode locally
+  (add-hook 'js2-mode-hook #'lsp-flycheck-enable) ; enable flycheck-lsp for web-mode locally
   (setq lsp-enable-symbol-highlighting t)
 (with-eval-after-load 'lsp-mode
   (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
@@ -471,32 +512,18 @@ folder, otherwise delete a word"
                                       (json-mode . "json")
                                       (javascript . "javascript")
                                       (typescript-mode . "typescript")))
-  (define-key evil-normal-state-map (kbd "g d") 'lsp-goto-implementation)
-  (define-key evil-normal-state-map (kbd "g t") 'lsp-goto-type-definition))
-
-  ;; (define-key evil-innusert-state-map (kbd "S-<f6>") 'lsp-rename)
-  ;; (define-key evil-normal-state-map (kbd "S-<f6>") 'lsp-rename)
-
-(add-hook 'js-mode-hook (
-                         lambda ()
-                                (add-hook 'before-save-hook 'lsp-organize-imports)))
-(add-hook 'js-mode-hook #'lsp)
-(add-hook 'js2-mode-hook #'lsp)
-(advice-add 'json-parse-buffer :around
-              (lambda (orig &rest rest)
-                (save-excursion
-                  (while (re-search-forward "\\\\u0000" nil t)
-                    (replace-match "")))
-                (apply orig rest)))
-  ;; (add-to-list 'lsp-language-id-configuration '(js-jsx-mode . "javascriptreact")))
-
-(use-package js-mode
-  :ensure nil
-  :mode (("\\.js?\\'" . js-mode)
-         ("\\.jsx?\\'" . js-mode))
+  )
+(use-package lsp-ui
+  :after lsp-mode
   :config
-  (setq javascript-indent-level 2)
-  (setq js-indent-level 2))
+  (setq lsp-ui-doc-enable t
+        lsp-ui-peek-enable t
+        lsp-ui-sideline-enable t
+        lsp-ui-doc-include-signature t
+        lsp-ui-doc-position 'at-point
+        lsp-ui-doc-show-with-cursor t))
+
+
 
 (use-package company
   :hook (prog-mode . company-mode)
@@ -530,6 +557,15 @@ folder, otherwise delete a word"
   :config
   (setq flycheck-check-syntax-automatically '(save mode-enabled newline))
   (setq flycheck-display-errors-delay 0.1))
+
+(use-package flycheck-posframe
+  :ensure t
+  :after flycheck
+  :config (add-hook 'flycheck-mode-hook #'flycheck-posframe-mode))
+(add-hook 'js-mode-hook (
+                         lambda ()
+                                (add-hook 'before-save-hook 'lsp-organize-imports)))
+  ;; (add-to-list 'lsp-language-id-configuration '(js-jsx-mode . "javascriptreact")))
 (use-package rjsx-mode
   :ensure t
   :config
@@ -537,20 +573,26 @@ folder, otherwise delete a word"
   (add-to-list 'auto-mode-alist '("pages\/.*\.js\'" . rjsx-mode)))
 
 
+(use-package js-mode
+  :ensure nil
+  :mode (("\\.js?\\'" . js-mode)
+         ("\\.jsx?\\'" . js-mode))
+  :config
+  (setq javascript-indent-level 2)
+  (setq js-indent-level 2))
 
 (with-eval-after-load 'js
   (setq js-indent-level 2)
   (define-key js-mode-map (kbd "M-.") nil))
 
-(use-package lsp-ui
-  :after lsp-mode
-  :config
-  (setq lsp-ui-doc-enable t
-        lsp-ui-peek-enable t
-        lsp-ui-sideline-enable t
-        lsp-ui-doc-include-signature t
-        lsp-ui-doc-position 'at-point
-        lsp-ui-doc-show-with-cursor t))
+(add-hook 'js-mode-hook #'lsp)
+(add-hook 'js2-mode-hook #'lsp)
+(advice-add 'json-parse-buffer :around
+              (lambda (orig &rest rest)
+                (save-excursion
+                  (while (re-search-forward "\\\\u0000" nil t)
+                    (replace-match "")))
+                (apply orig rest)))
 
 
 
@@ -563,6 +605,7 @@ folder, otherwise delete a word"
 
 ;; ================== End LSP MODE ===============
 ;; ==================  org MODE ===============
+
 (add-hook 'org-mode-hook #'org-modern-mode)
 (add-hook 'org-agenda-finalize-hook #'org-modern-agenda)
 ;; Add frame borders and window dividers
@@ -604,6 +647,41 @@ folder, otherwise delete a word"
 (use-package org-jira :ensure t)
 (setq jiralib-url "https://falkondata.atlassian.net")
 ;; ================== End org MODE ===============
+;; ==================legder MODE ===============
+
+(setup (:pkg ledger-mode)
+  (:file-match "\\.lgr\\'")
+  (:file-match "\\.dat\\'")
+  (:file-match "\\.ledger\\'")
+
+  (:bind "TAB" completion-at-point)
+  (:option
+   ledger-reports '(("bal" "%(binary) -f %(ledger-file) bal")
+                    ("bal this quarter" "%(binary) -f %(ledger-file) --period \"this quarter\" bal")
+                    ("bal last quarter" "%(binary) -f %(ledger-file) --period \"last quarter\" bal")
+                    ("reg" "%(binary) -f %(ledger-file) reg")
+                    ("payee" "%(binary) -f %(ledger-file) reg @%(payee)")
+                    ("account" "%(binary) -f %(ledger-file) reg %(account)"))))
+
+(setup (:pkg hledger-mode :straight t)
+  (:bind "TAB" completion-at-point))
+(delete 'company-dabbrev company-backends)
+(use-package company-ledger
+  :ensure company
+  :init
+  (with-eval-after-load 'company
+    (add-to-list 'company-backends 'company-ledger)))
+(use-package flycheck-ledger :after ledger-mode)
+(eval-after-load 'flycheck '(require 'flycheck-ledger))
+(global-flycheck-mode t)
+(use-package org-contrib :ensure t)
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '(
+   (ledger . t)         ;this is the important one for this tutorial
+))
+
+;; ================== End ledger MODE ===============
 (use-package hydra)
 
 (defhydra hydra-text-scale (:timeout 4)
@@ -653,6 +731,7 @@ folder, otherwise delete a word"
            "C-x C-j" consult-dir-jump-file))
   (:option consult-dir-project-list-function nil))
 
+
 ;; ;; ;; Thanks Karthik!
 (defun eshell/z (&optional regexp)
   "Navigate to a previously visited directory in eshell."
@@ -696,7 +775,7 @@ folder, otherwise delete a word"
   (define-key evil-window-map "U" 'winner-redo))
 
 (setup (:pkg visual-fill-column)
-  (setq visual-fill-column-width 120
+  (setq visual-fill-column-width 95
         visual-fill-column-center-text t)
   (:hook-into org-mode)
 
@@ -873,20 +952,6 @@ folder, otherwise delete a word"
               web-mode
               typescript-mode
               js2-mode))
-
-(setup (:pkg ledger-mode)
-  (:file-match "\\.lgr\\'")
-  (:bind "TAB" completion-at-point)
-  (:option
-   ledger-reports '(("bal" "%(binary) -f %(ledger-file) bal")
-                    ("bal this quarter" "%(binary) -f %(ledger-file) --period \"this quarter\" bal")
-                    ("bal last quarter" "%(binary) -f %(ledger-file) --period \"last quarter\" bal")
-                    ("reg" "%(binary) -f %(ledger-file) reg")
-                    ("payee" "%(binary) -f %(ledger-file) reg @%(payee)")
-                    ("account" "%(binary) -f %(ledger-file) reg %(account)"))))
-
-(setup (:pkg hledger-mode :straight t)
-  (:bind "TAB" completion-at-point))
 
 (defun read-file (file-path)
   (with-temp-buffer
