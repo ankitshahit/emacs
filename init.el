@@ -1,4 +1,4 @@
-;; You will most likely need to adjust this font size for your system!
+    ;; You will most likely need to adjust this font size for your system!
 (defvar runemacs/default-font-size 100)
 
 (setq gc-cons-threshold (* 100 1024 1024))
@@ -402,7 +402,7 @@ folder, otherwise delete a word"
 (use-package general
   :config
   (general-create-definer rune/leader-keys
-    :keymaps '(normal insert visual  emacs lsp-mode-map)
+    :keymaps '(normal insert visual  emacs )
     :prefix "SPC"
     :global-prefix "C-SPC")
 
