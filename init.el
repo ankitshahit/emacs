@@ -399,10 +399,6 @@ folder, otherwise delete a word"
   ([remap describe-variable] . counsel-describe-variable)
   ([remap describe-key] . helpful-key))
 
-(defun my-lsp-command-map ()
-  "Wrapper function for lsp-command-map."
-  (interactive)
-  (call-interactively 'lsp-command-map))
 (use-package general
   :config
   (general-create-definer rune/leader-keys
