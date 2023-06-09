@@ -234,21 +234,16 @@ folder, otherwise delete a word"
 (setup (:pkg evil-nerd-commenter)
   (:global "M-/" evilnc-comment-or-uncomment-lines))
 
-; Loading tree-sitter package
-;; (require 'tree-sitter-langs)
-;; (require 'tree-sitter)
 
 ;; Activate tree-sitter globally (minor mode registered on every buffer)
-;; (global-tree-sitter-mode)
-;; (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
-;; (add-hook 'js-mode-hook #'tree-sitter-mode)
+ (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
 
 
 ;; ============== Editor connfiguration ===============
 (cd "g:/projects/")
 
 ;; Set default connection mode to SSH
-(setq tramp-default-method "ssh")
+(setq tramp-default-method "sshx")
 
 
 (setq inhibit-startup-message t)
@@ -349,10 +344,10 @@ folder, otherwise delete a word"
 ;;
 ;; M-x all-the-icons-install-fonts
 
-(when (display-graphic-p)
-  (require 'all-the-icons))
-;; or
+(use-package memoize :ensure t)
 (use-package all-the-icons
+  :after memoize
+  :ensure t
   :if (display-graphic-p))
 (setq inhibit-compacting-font-caches t)
 
@@ -367,6 +362,7 @@ folder, otherwise delete a word"
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
 (use-package ivy-rich
+  :ensure t
   :init
   (ivy-rich-mode 1))
 
@@ -419,8 +415,10 @@ folder, otherwise delete a word"
     "lr" '(lsp-rename :which-key "lsp rename")
     "ljr" '( lsp-organize-imports :which-key "lsp javascript rename files")
     "lo" '( lsp-organize-imports :which-key "lsp organize imports")
-    "lt" '(lsp-goto-type-definition :which-key "lsp goto type definition")
-    "ld" '(lsp-goto-implementation :which-key "lsp goto definition")
+    "ld" '(lsp-find-definition :which-key "lsp find definition")
+    "li" '(lsp-find-implementation :which-key "lsp implementation")
+    "lr" '(lsp-find-references :which-key "lsp references")
+    "dn" '(lsp-find-declaration :which-key "lsp declaration")
     "lws" '(lsp-workspace-shutdown :which-key "lsp workspace shutdown")
     "lwr" '(lsp-workspace-restart :which-key "lsp workspace restart")
 ))
@@ -454,6 +452,7 @@ folder, otherwise delete a word"
 (setq lsp-keymap-prefix "C-c l")
 
 (use-package lsp-mode
+  :ensure t
   :init (add-to-list 'company-backends 'company-capf)
   :bind ("C-c l" . lsp-command-map)
   :hook ((
@@ -466,9 +465,9 @@ folder, otherwise delete a word"
   :commands lsp
   :config
   (setq lsp-auto-guess-root t)
-  (setq lsp-diagnostic-package :none)             ; disable flycheck-lsp for most modes
+  (setq lsp-diagnostic-package t)             ; disable flycheck-lsp for most modes
   (add-hook 'web-mode-hook #'lsp-flycheck-enable) ; enable flycheck-lsp for web-mode locally
-  (add-hook 'js-mode-hook #'lsp-flycheck-enable) ; enable flycheck-lsp for web-mode locally
+  (add-hook 'js-mode-hook #'flycheck-mode) ; enable flycheck-lsp for web-mode locally
   (add-hook 'js2-mode-hook #'lsp-flycheck-enable) ; enable flycheck-lsp for web-mode locally
   (setq lsp-enable-symbol-highlighting t)
 (with-eval-after-load 'lsp-mode
@@ -489,6 +488,8 @@ folder, otherwise delete a word"
   (setq read-process-output-max (* 1024 2048)) ;; 1mb
   (setq lsp-idle-delay 0)
   (setq lsp-prefer-capf t) ; prefer lsp's company-capf over company-lsp
+  (setq lsp-completion-show-detail t)
+  (setq lsp-completion-show-kind t)
 (setq lsp-language-id-configuration '((java-mode . "java")
                                       (python-mode . "python")
                                       (gfm-view-mode . "markdown")
@@ -506,15 +507,18 @@ folder, otherwise delete a word"
                                       (haskell-mode . "haskell")
                                       (php-mode . "php")
                                       (json-mode . "json")
+                                      (js-mode . "javascript")
                                       (javascript . "javascript")
                                       (typescript-mode . "typescript")))
   )
 (use-package lsp-ui
+  :ensure t
   :after lsp-mode
   :config
   (setq lsp-ui-doc-enable t
         lsp-ui-peek-enable t
         lsp-ui-sideline-enable t
+        lsp-ui-sideline-show-diagnostics t
         lsp-ui-doc-include-signature t
         lsp-ui-doc-position 'at-point
         lsp-ui-doc-show-with-cursor t))
@@ -549,19 +553,31 @@ folder, otherwise delete a word"
   :defer t
   :after (web-mode company))
 (use-package flycheck
-  :hook ((prog-mode . flycheck-mode))
+  :hook (
+         (prog-mode . flycheck-mode)
+         (js-mode . flycheck-mode)
+         (js2-mode . flycheck-mode)
+         )
   :config
+  (flycheck-add-mode 'javascript-eslint 'web-mode)
   (setq flycheck-check-syntax-automatically '(save mode-enabled newline))
-  (setq flycheck-display-errors-delay 0.1))
+  (setq flycheck-display-errors-delay 0.1)
+  (global-flycheck-mode)
+(add-hook 'after-init-hook #'global-flycheck-mode)
+)
 
 (use-package flycheck-posframe
   :ensure t
   :after flycheck
   :config (add-hook 'flycheck-mode-hook #'flycheck-posframe-mode))
-(add-hook 'js-mode-hook (
-                         lambda ()
-                                (add-hook 'before-save-hook 'lsp-organize-imports)))
-  ;; (add-to-list 'lsp-language-id-configuration '(js-jsx-mode . "javascriptreact")))
+(setq flycheck-indication-mode 'left-margin) 
+(defun my/set-flycheck-margins ()
+ (setq left-fringe-width 8 right-fringe-width 8 left-margin-width 1 right-margin-width 0) (flycheck-refresh-fringes-and-margins))
+(add-hook 'flycheck-mode-hook #'my/set-flycheck-margins) 
+
+
+
+
 (use-package rjsx-mode
   :ensure t
   :config
@@ -590,7 +606,14 @@ folder, otherwise delete a word"
                     (replace-match "")))
                 (apply orig rest)))
 
+ (add-hook 'js-mode-hook #'tree-sitter-mode)
+ (add-hook 'js-mode-hook #'lsp-mode)
+ (add-hook 'js-mode-hook #'lsp)
+ (add-hook 'js-mode-hook #'prettier-js-mode)
 
+;;(add-hook 'js-mode-hook (
+;;                         lambda ()
+;;                                (add-hook 'after-save-hook 'lsp-organize-imports)))
 
 (use-package prettier-js
  :ensure t
@@ -599,9 +622,15 @@ folder, otherwise delete a word"
  (add-hook 'typescript-mode-hook #'prettier-js-mode)
 )
 
+;;Loading tree-sitter package
+(use-package tree-sitter-langs :ensure t
+  :config
+ (global-tree-sitter-mode)
+  )
+ (use-package tree-sitter :ensure t)
 ;; ================== End LSP MODE ===============
 ;; ==================  org MODE ===============
-
+(use-package org-modern :ensure t)
 (add-hook 'org-mode-hook #'org-modern-mode)
 (add-hook 'org-agenda-finalize-hook #'org-modern-agenda)
 ;; Add frame borders and window dividers
@@ -664,6 +693,7 @@ folder, otherwise delete a word"
 (delete 'company-dabbrev company-backends)
 (use-package company-ledger
   :ensure company
+  :ensure t
   :init
   (with-eval-after-load 'company
     (add-to-list 'company-backends 'company-ledger)))
