@@ -236,10 +236,8 @@ installed via Guix.")
 
   (evil-set-initial-state 'messages-buffer-mode 'normal)
   (evil-set-initial-state 'dashboard-mode 'normal
-
-                          )(evil-mode 1))
-
-(use-package undo-fu)
+)
+(evil-mode 1))
 
 (setq evil-want-keybinding nil)
 (use-package evil-collection
@@ -250,6 +248,7 @@ installed via Guix.")
 (use-package evil-matchit  :ensure t  :config (global-evil-matchit-mode 1))
 (use-package evil-surround :ensure t  :config (global-evil-surround-mode 1))
 
+(use-package undo-fu)
 
 (defun dw/dont-arrow-me-bro ()
   (interactive)
@@ -276,6 +275,13 @@ installed via Guix.")
 (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
 (setq scroll-step 1) ;; keyboard scroll one line at a time
 (setq use-dialog-box nil)
+;;(use-package evil-motion-trainer :ensure t
+;;  :config
+;;(setq evil-motion-trainer-threshold 6)
+;;(setq evil-motion-trainer-super-annoying-mode t)
+;;(emt-add-suggestion 'evil-next-line 'evil-avy-goto-char-timer)
+;;(global-evil-motion-trainer-mode 1)
+;;)
 ;;=========== End of evil mode ================
 
 (defun dw/minibuffer-backward-kill (arg)
@@ -313,10 +319,7 @@ folder, otherwise delete a word"
 
 (use-package evil-nerd-commenter
   :ensure t
-  :defer t
   :config
-
-  (global-set-key "M-/" 'evilnc-comment-or-uncomment-lines)
   )
 
 
@@ -367,12 +370,13 @@ folder, otherwise delete a word"
   :if (display-graphic-p))
 (setq inhibit-compacting-font-caches t)
 
-(use-package doom-modeline
-  :ensure t
-  :defer t
-  :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-height 15)))
-(setq doom-modeline-major-mode-icon t)
+(use-package telephone-line :ensure t :config (telephone-line-mode 1))
+;; (use-package doom-modeline
+;;   :ensure t
+;;   :defer t
+;;   :init (doom-modeline-mode 1)
+;;   :custom ((doom-modeline-height 15)))
+;; (setq doom-modeline-major-mode-icon t)
 (use-package doom-themes
   :init (load-theme 'doom-dracula t))
 
@@ -416,8 +420,8 @@ folder, otherwise delete a word"
 (use-package general
   :config
   (general-create-definer rune/leader-keys
-    :keymaps '(normal emacs )
-    :prefix "SPC"
+    :keymaps '(normal visual emacs )
+    :prefix "C-SPC"
     :global-prefix "C-SPC")
 
   (rune/leader-keys
@@ -427,9 +431,9 @@ folder, otherwise delete a word"
     "es" '(eshell :which-key "eshell")
     "mm" '(magit :which-key "magit")
     "se" '(setenv :which-key "set env")
-    "c" '(:ignore :which-key "Compiler commands")
     "cc" '(compile :which-key "Compile")
     "cr" '(recompile :which-key "recompile")
+    "u" '(evilnc-comment-or-uncomment-lines :which-key "Comment/un-comment")
     "b" '(eval-buffer :which-key "Eval buffer")
     "rf" '(recover-this-file :which-key "Emacs: Recover this file")
     "l" '(:keymap lsp-command-map :package lsp-mode :which-key "lsp commands")
@@ -875,10 +879,10 @@ folder, otherwise delete a word"
         display-buffer-reuse-window
         display-buffer-same-window))
 
-(use-package all-the-icons-dired :defer t)
-(use-package dired-single :defer t)
-(use-package dired-ranger :defer t)
-(use-package dired-collapse :defer t)
+(use-package all-the-icons-dired)
+(use-package dired-single)
+(use-package dired-ranger)
+(use-package dired-collapse)
 
 ;; (setup dired
 (setq dired-listing-switches "-agho --group-directories-first"
@@ -912,7 +916,7 @@ folder, otherwise delete a word"
   "X" 'dired-ranger-move
   "p" 'dired-ranger-paste)
 
-(use-package dired-rainbow :ensure t :defer t
+(use-package dired-rainbow :ensure t
   :config
   (dired-rainbow-define-chmod directory "#6cb2eb" "d.*")
   (dired-rainbow-define html "#eb5286" ("css" "less" "sass" "scss" "htm" "html" "jhtm" "mht" "eml" "mustache" "xhtml"))
