@@ -44,6 +44,8 @@
                          ("org" . "https://orgmode.org/elpa/")
                          ("elpa" . "https://elpa.gnu.org/packages/")
                          ("org-contrib" . "https://elpa.nongnu.org/nongnu/")
+
+
                          ))
 
 (package-initialize)
@@ -100,10 +102,8 @@ installed via Guix.")
       url-history-file (expand-file-name "url/history" user-emacs-directory))
 
 ;; Use no-littering to automatically set common paths to the new user-emacs-directory
-(use-package no-littering
-  :ensure t
-  :defer t)
-(require 'no-littering)
+(setup (:pkg no-littering)
+  (require 'no-littering))
 
 ;; Keep customization settings in a temporary file (thanks Ambrevar!)
 (setq custom-file
@@ -116,10 +116,7 @@ installed via Guix.")
   (gcmh-mode 1)
   )
 
-(use-package vlf
-  :ensure t
-  :defer t
-  )
+(use-package vlf)
 (defun my-find-file-check-make-large-file-read-only-hook ()
   "If a file is over a given size, make the buffer read only."
   (when (> (buffer-size) (* 10 1024 1024))
@@ -143,11 +140,114 @@ installed via Guix.")
   :config
   (dashboard-setup-startup-hook))
 
-;; ============== Editor configuration ===============
+
+;; ================== Evil package =========================
+(use-package evil
+  :init
+  (setq evil-want-integration t)
+  (setq evil-want-keybinding nil)
+  (setq evil-want-C-u-scroll t)
+  (setq evil-want-minibuffer t)
+  (setq evil-want-fine-undo t)
+  (setq evil-undo-system 'undo-fu)
+  (setq evil-search-module 'evil-search)
+  :config
+  (setq evil-want-C-i-jump nil)
+  (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
+  (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
+
+  ;; Use visual line motions even outside of visual-line-mode buffers
+  (evil-global-set-key 'motion "j" 'evil-next-visual-line)
+  (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
+  (evil-set-initial-state 'messages-buffer-mode 'normal)
+  (evil-set-initial-state 'dashboard-mode 'normal
+
+                          )(evil-mode 1))
+
+(use-package undo-fu)
+
+(setq evil-want-keybinding nil)
+(use-package evil-collection
+  :init
+
+  :after evil
+  :config
+  (evil-collection-init))
+(use-package evil-matchit :ensure t :config (global-evil-matchit-mode 1))
+(use-package evil-surround :ensure t :config (global-evil-surround-mode 1))
+
+
+(defun dw/dont-arrow-me-bro ()
+  (interactive)
+  (message "Arrow keys are bad, you know?"))
+;; Disable arrow keys in normal and visual modes
+(define-key evil-normal-state-map (kbd "<left>") 'dw/dont-arrow-me-bro)
+(define-key evil-normal-state-map (kbd "<right>") 'dw/dont-arrow-me-bro)
+(define-key evil-normal-state-map (kbd "<down>") 'dw/dont-arrow-me-bro)
+(define-key evil-normal-state-map (kbd "<up>") 'dw/dont-arrow-me-bro)
+(evil-global-set-key 'motion (kbd "<left>") 'dw/dont-arrow-me-bro)
+(evil-global-set-key 'motion (kbd "<right>") 'dw/dont-arrow-me-bro)
+(evil-global-set-key 'motion (kbd "<down>") 'dw/dont-arrow-me-bro)
+(evil-global-set-key 'motion (kbd "<up>") 'dw/dont-arrow-me-bro)
+
+(evil-set-initial-state 'messages-buffer-mode 'normal)
+(evil-set-initial-state 'dashboard-mode 'normal)
+(setq evil-want-fine-undo t)
+(define-key evil-normal-state-map (kbd "TAB") 'tab-to-tab-stop)
+
+
+(setq evil-magit-state 'normal)
+(setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
+(setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
+(setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
+(setq scroll-step 1) ;; keyboard scroll one line at a time
+(setq use-dialog-box nil)
+;;=========== End of evil mode ================
+(defun dw/minibuffer-backward-kill (arg)
+  "When minibuffer is completing a file name delete up to parent
+folder, otherwise delete a word"
+  (interactive "p")
+  (if minibuffer-completing-file-name
+      ;; Borrowed from https://github.com/raxod502/selectrum/issues/498#issuecomment-803283608
+      (if (string-match-p "/." (minibuffer-contents))
+          (zap-up-to-char (- arg) ?/)
+        (delete-minibuffer-contents))
+    (delete-word (- arg))))
+
+(setup (:pkg vertico)
+  ;; :straight '(vertico :host github
+  ;;                     :repo "minad/vertico"
+  ;;                     :branch "main")
+  (vertico-mode)
+  (:with-map vertico-map
+    (:bind "C-j" vertico-next
+           "C-k" vertico-previous
+           "C-f" vertico-exit))
+  (:with-map minibuffer-local-map
+    (:bind "M-h" dw/minibuffer-backward-kill))
+  (:option vertico-cycle t)
+  (custom-set-faces '(vertico-current ((t (:background "#3a3f5a"))))))
+
+(setup (:pkg ws-butler)
+  (:hook-into text-mode prog-mode))
+
+(setup (:pkg evil-nerd-commenter)
+  (:global "M-/" evilnc-comment-or-uncomment-lines))
+
+(use-package tree-sitter
+  :ensure t
+  :config
+  ;; (tree-sitter-hl-mode)
+  (global-tree-sitter-mode))
+(use-package tree-sitter-langs
+  :after tree-sitter
+  :ensure t)
+
+;; ============== Editor connfiguration ===============
 (cd "g:/projects/")
 
 ;; Set default connection mode to SSH
-(setq tramp-default-method "sshx")
+(setq tramp-default-method "ssh")
 
 
 (setq inhibit-startup-message t)
@@ -166,7 +266,6 @@ installed via Guix.")
 (tooltip-mode -1)           ; Disable tooltips
 
 (setq-default indent-tabs-mode nil)
-
 (setq-default tab-width 2)
 (setq-default evil-shift-width tab-width)
 
@@ -174,8 +273,8 @@ installed via Guix.")
 (menu-bar-mode -1)            ; Disable the menu bar
 (tab-bar-mode t)
 ;; maximize sccreen and windowSet frame transparency and maximize windows by default.
-(add-to-list 'default-frame-alist '(alpha . (90 . 90)))
-(set-frame-parameter (selected-frame) 'alpha '(88 . 90))
+(add-to-list 'default-frame-alist '(alpha . (80 . 80)))
+(set-frame-parameter (selected-frame) 'alpha '(80 . 80))
 (add-to-list 'default-frame-alist '(fullscreen . maximized))
 (add-hook 'window-setup-hook 'toggle-frame-fullscreen t)
 (add-hook 'window-setup-hook 'toggle-frame-maximized t)
@@ -214,120 +313,8 @@ installed via Guix.")
 ;; Make ESC quit prompts
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 (global-set-key (kbd "C-M-u") 'universal-argument)
-;; ============ End Editor ======================
-
-;; ================== Evil package =========================
-(use-package evil
-  :init
-  (setq evil-want-integration t)
-  (setq evil-want-keybinding nil)
-  (setq evil-want-C-u-scroll t)
-  (setq evil-want-minibuffer t)
-  (setq evil-want-fine-undo t)
-  (setq evil-undo-system 'undo-fu)
-  :config
-  (setq evil-want-C-i-jump nil)
-  (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
-  (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
-
-  ;; Use visual line motions even outside of visual-line-mode buffers
-  (evil-global-set-key 'motion "j" 'evil-next-visual-line)
-  (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
-
-  (evil-set-initial-state 'messages-buffer-mode 'normal)
-  (evil-set-initial-state 'dashboard-mode 'normal
-)
-(evil-mode 1))
-
-(setq evil-want-keybinding nil)
-(use-package evil-collection
-  :init
-  :after evil
-  :config
-  (evil-collection-init))
-(use-package evil-matchit  :ensure t  :config (global-evil-matchit-mode 1))
-(use-package evil-surround :ensure t  :config (global-evil-surround-mode 1))
-
-(use-package undo-fu)
-
-(defun dw/dont-arrow-me-bro ()
-  (interactive)
-  (message "Arrow keys are bad, you know?"))
-;; Disable arrow keys in normal and visual modes
-(define-key evil-normal-state-map (kbd "<left>") 'dw/dont-arrow-me-bro)
-(define-key evil-normal-state-map (kbd "<right>") 'dw/dont-arrow-me-bro)
-(define-key evil-normal-state-map (kbd "<down>") 'dw/dont-arrow-me-bro)
-(define-key evil-normal-state-map (kbd "<up>") 'dw/dont-arrow-me-bro)
-(evil-global-set-key 'motion (kbd "<left>") 'dw/dont-arrow-me-bro)
-(evil-global-set-key 'motion (kbd "<right>") 'dw/dont-arrow-me-bro)
-(evil-global-set-key 'motion (kbd "<down>") 'dw/dont-arrow-me-bro)
-(evil-global-set-key 'motion (kbd "<up>") 'dw/dont-arrow-me-bro)
-
-(evil-set-initial-state 'messages-buffer-mode 'normal)
-(evil-set-initial-state 'dashboard-mode 'normal)
-(setq evil-want-fine-undo t)
-(define-key evil-normal-state-map (kbd "TAB") 'tab-to-tab-stop)
-
-
-(setq evil-magit-state 'normal)
-(setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
-(setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
-(setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
-(setq scroll-step 1) ;; keyboard scroll one line at a time
-(setq use-dialog-box nil)
-;;(use-package evil-motion-trainer :ensure t
-;;  :config
-;;(setq evil-motion-trainer-threshold 6)
-;;(setq evil-motion-trainer-super-annoying-mode t)
-;;(emt-add-suggestion 'evil-next-line 'evil-avy-goto-char-timer)
-;;(global-evil-motion-trainer-mode 1)
-;;)
-;;=========== End of evil mode ================
-
-(defun dw/minibuffer-backward-kill (arg)
-  "When minibuffer is completing a file name delete up to parent
-folder, otherwise delete a word"
-  (interactive "p")
-  (if minibuffer-completing-file-name
-      ;; Borrowed from https://github.com/raxod502/selectrum/issues/498#issuecomment-803283608
-      (if (string-match-p "/." (minibuffer-contents))
-          (zap-up-to-char (- arg) ?/)
-        (delete-minibuffer-contents))
-    (delete-word (- arg))))
-
-(setup (:pkg vertico)
-  :defer t
-  ;; :straight '(vertico :host github
-  ;;                     :repo "minad/vertico"
-  ;;                     :branch "main")
-  (vertico-mode)
-  (:with-map vertico-map
-    (:bind "C-j" vertico-next
-           "C-k" vertico-previous
-           "C-f" vertico-exit))
-  (:with-map minibuffer-local-map
-    (:bind "M-h" dw/minibuffer-backward-kill))
-  (:option vertico-cycle t)
-  (custom-set-faces '(vertico-current ((t (:background "#3a3f5a"))))))
-
-(use-package ws-butler
-  :ensure t
-  :defer t
-  :config
-  )
-(add-hook 'prog-mode-hook #'ws-butler-mode)
-
-(use-package evil-nerd-commenter
-  :ensure t
-  :config
-  )
-
-
-;; Activate tree-sitter globally (minor mode registered on every buffer)
-(add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode)
-
-
-(use-package paren :ensure t :defer t :config
+;; ============ Editor ======================
+(setup (:require paren)
   (set-face-attribute 'show-paren-match-expression nil :background "#363e4a")
   (show-paren-mode 1))
 
@@ -337,8 +324,6 @@ folder, otherwise delete a word"
 ;; (use-package command-log-mode)
 ;; ============ Styling ================
 (use-package ivy
-  :ensure t
-  :defer t
   :diminish
   :bind (("C-s" . swiper)
          :map ivy-minibuffer-map
@@ -362,34 +347,35 @@ folder, otherwise delete a word"
 ;;
 ;; M-x all-the-icons-install-fonts
 
-(use-package memoize :ensure t)
+(when (display-graphic-p)
+  (require 'all-the-icons))
+;; or
 (use-package all-the-icons
-  :after memoize
-  :ensure t
-  :defer t
   :if (display-graphic-p))
 (setq inhibit-compacting-font-caches t)
+;; (use-package telephone-line :ensure t :config (telephone-line-mode 1))
+(use-package doom-modeline
+  :ensure t  :hook (after-init . doom-modeline-mode)
 
-(use-package telephone-line :ensure t :config (telephone-line-mode 1))
-;; (use-package doom-modeline
-;;   :ensure t
-;;   :defer t
-;;   :init (doom-modeline-mode 1)
-;;   :custom ((doom-modeline-height 15)))
-;; (setq doom-modeline-major-mode-icon t)
+  :init (doom-modeline-mode 1)
+  :custom ((doom-modeline-height 30)))
+(setq doom-modeline-icon (display-graphic-p))
+(setq doom-modeline-project-detection 'auto)
+(setq doom-modeline-project-detection 'ffip)
+(setq inhibit-compacting-font-caches t)
 (use-package doom-themes
   :init (load-theme 'doom-dracula t))
 
 (use-package rainbow-delimiters
-  :ensure t
-  :defer t
   :hook (prog-mode . rainbow-delimiters-mode))
 (use-package ivy-rich
-  :ensure t
-  :defer t
   :init
   (ivy-rich-mode 1))
 
+
+(setup (:require paren)
+  (set-face-attribute 'show-paren-match-expression nil :background "#363e4a")
+  (show-paren-mode 1))
 
 ;; ======== Styling complete ==================
 (use-package which-key
@@ -399,7 +385,6 @@ folder, otherwise delete a word"
   (setq which-key-idle-delay 1))
 
 (use-package counsel
-  :defer t
   :bind (("M-x" . counsel-M-x)
          ("C-x b" . counsel-ibuffer)
          ("C-x C-f" . counsel-find-file)
@@ -407,7 +392,6 @@ folder, otherwise delete a word"
          ("C-r" . 'counsel-minibuffer-history)))
 
 (use-package helpful
-  :defer t
   :custom
   (counsel-describe-function-function #'helpful-callable)
   (counsel-describe-variable-function #'helpful-variable)
@@ -420,22 +404,19 @@ folder, otherwise delete a word"
 (use-package general
   :config
   (general-create-definer rune/leader-keys
-    :keymaps '(normal visual emacs )
-    :prefix "C-SPC"
+    :keymaps '(normal insert visual  emacs )
+    :prefix "SPC"
     :global-prefix "C-SPC")
 
   (rune/leader-keys
     "t"  '(:ignore t :which-key "toggles")
-    "j" ' (:ignore t :which-key "Jira")
-    "ji" '(org-jira-create-issue :which-key "create jira issue")
     "es" '(eshell :which-key "eshell")
     "mm" '(magit :which-key "magit")
     "se" '(setenv :which-key "set env")
     "cc" '(compile :which-key "Compile")
     "cr" '(recompile :which-key "recompile")
-    "u" '(evilnc-comment-or-uncomment-lines :which-key "Comment/un-comment")
-    "b" '(eval-buffer :which-key "Eval buffer")
-    "rf" '(recover-this-file :which-key "Emacs: Recover this file")
+    "cb" '(eval-buffer :which-key "Eval buffer")
+    "aa" '(org-agenda-list :which-key "Agenda list")
     "l" '(:keymap lsp-command-map :package lsp-mode :which-key "lsp commands")
     ))
 
@@ -444,17 +425,30 @@ folder, otherwise delete a word"
 ;;
 ;;
 (setq compile-command "")
+(use-package js
+  :ensure nil
+  :mode ("\\.js?\\'" . js2-mode)
+  :config
+  (setq js-indent-level 2)
+  (add-hook 'flycheck-mode-hook
+            #'(lambda ()
+                (let* ((root (locate-dominating-file
+                              (or (buffer-file-name) default-directory)
+                              "node_modules"))
+                       (eslint
+                        (and root
+                             (expand-file-name "node_modules/.bin/eslint"
+                                               root))))
+                  (when (and eslint (file-executable-p eslint))
+                    (setq-local flycheck-javascript-eslint-executable eslint))))))
 (use-package company-prescient
-  :defer t
   :after (prescient company)
   :config
   (company-prescient-mode +1))
 (require `company)
-(setq lsp-keymap-prefix "SPC l")
+(setq lsp-keymap-prefix "C-SPC l")
 
 (use-package lsp-mode
-  :ensure t
-  :defer t
   :init (add-to-list 'company-backends 'company-capf)
   :hook ((
           js-mode         ; ts-ls (tsserver wrapper)
@@ -462,14 +456,11 @@ folder, otherwise delete a word"
           python-mode     ; mspyls
           web-mode
           js2-mode
-          ) . lsp-deferred)
+          ) . lsp)
   :commands lsp
   :config
   (setq lsp-auto-guess-root t)
-  (setq lsp-diagnostic-package t)             ; disable flycheck-lsp for most modes
-  (add-hook 'web-mode-hook #'flycheck-mode) ; enable flycheck-lsp for web-mode locally
-  (add-hook 'js-mode-hook #'flycheck-mode) ; enable flycheck-lsp for web-mode locally
-  (add-hook 'js2-mode-hook  #'flycheck-mode); enable flycheck-lsp for web-mode locally
+  (setq lsp-diagnostic-package :flycheck)             ; disable flycheck-lsp for most modes
   (setq lsp-enable-symbol-highlighting t)
   (with-eval-after-load 'lsp-mode
     (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
@@ -489,8 +480,6 @@ folder, otherwise delete a word"
   (setq read-process-output-max (* 1024 2048)) ;; 1mb
   (setq lsp-idle-delay 0)
   (setq lsp-prefer-capf t) ; prefer lsp's company-capf over company-lsp
-  (setq lsp-completion-show-detail t)
-  (setq lsp-completion-show-kind t)
   (setq lsp-language-id-configuration '((java-mode . "java")
                                         (python-mode . "python")
                                         (gfm-view-mode . "markdown")
@@ -508,27 +497,28 @@ folder, otherwise delete a word"
                                         (haskell-mode . "haskell")
                                         (php-mode . "php")
                                         (json-mode . "json")
-                                        (js-mode . "javascript")
                                         (javascript . "javascript")
                                         (typescript-mode . "typescript")))
   )
 (use-package lsp-ui
-  :ensure t
-  :defer t
   :after lsp-mode
   :config
   (setq lsp-ui-doc-enable t
         lsp-ui-peek-enable t
         lsp-ui-sideline-enable t
-        lsp-ui-sideline-show-diagnostics t
         lsp-ui-doc-include-signature t
         lsp-ui-doc-position 'at-point
         lsp-ui-doc-show-with-cursor t))
-
-
+(use-package terraform-mode
+  :init (add-to-list 'company-backends 'company-terraform-init)
+  :mode (
+         ( "\\.tf\\'" . terraform-mode )
+         ( "\\.tfvars\\'" . terraform-mode )
+         )
+  :ensure t
+  )
 
 (use-package company
-  :defer t
   :hook (prog-mode . company-mode)
   :bind ("TAB" . company-complete)
   :config
@@ -548,6 +538,7 @@ folder, otherwise delete a word"
 (setq company-minimum-prefix-length 1
       company-idle-delay 0.0) ;; default is 0.2
 (global-company-mode 1)
+(use-package company-terraform :after company :ensure t)
 (use-package company-restclient
   :defer t
   :after company)
@@ -556,69 +547,24 @@ folder, otherwise delete a word"
   :defer t
   :after (web-mode company))
 (use-package flycheck
-  :defer t
-  :hook (
-         (prog-mode . flycheck-mode)
-         (js-mode . flycheck-mode)
-         (js2-mode . flycheck-mode)
-         )
+  :hook ((prog-mode . flycheck-mode))
   :config
-  (flycheck-add-mode 'javascript-eslint 'web-mode)
-  (flycheck-add-mode 'javascript-eslint 'js-mode)
-  (flycheck-add-mode 'javascript-eslint 'js2-mode)
   (setq flycheck-check-syntax-automatically '(save mode-enabled newline))
-  (setq flycheck-display-errors-delay 0.1)
-  (global-flycheck-mode)
-  (add-hook 'after-init-hook #'global-flycheck-mode)
-  )
-
+  (setq flycheck-display-errors-delay 0.1))
 (use-package flycheck-posframe
-  :defer t
   :ensure t
   :after flycheck
-  :config (add-hook 'flycheck-mode-hook #'flycheck-posframe-mode))
-(setq flycheck-indication-mode 'left-margin)
-(defun my/set-flycheck-margins ()
-  "Add flycheck margin."
-  (setq right-fringe-width 8)
-  (setq left-fringe-width 8 )
-  (setq left-margin-width 1 )
-  (setq right-margin-width 0 )
-  (flycheck-refresh-fringes-and-margins))
-
-(add-hook 'flycheck-mode-hook #'my/set-flycheck-margins)
-
-
-
-
+  :config
+  (flycheck-posframe-configure-pretty-defaults)
+  (add-hook 'flycheck-mode-hook #'flycheck-posframe-mode))
 (use-package rjsx-mode
-  :defer t
   :ensure t
   :config
   (add-to-list 'auto-mode-alist '("components\/.*\.js\'" . rjsx-mode))
   (add-to-list 'auto-mode-alist '("pages\/.*\.js\'" . rjsx-mode)))
 
 
-(use-package js
-  :defer t
-  :ensure nil
-  :mode ("\\.js?\\'" . js2-mode)
-  :config
-  (setq js-indent-level 2)
-  (add-hook 'flycheck-mode-hook
-            #'(lambda ()
-                (let* ((root (locate-dominating-file
-                              (or (buffer-file-name) default-directory)
-                              "node_modules"))
-                       (eslint
-                        (and root
-                             (expand-file-name "node_modules/.bin/eslint"
-                                               root))))
-                  (when (and eslint (file-executable-p eslint))
-                    (setq-local flycheck-javascript-eslint-executable eslint))))))
 (use-package js-mode
-  :after js
-  :defer t
   :ensure nil
   :mode (("\\.js?\\'" . js-mode)
          ("\\.jsx?\\'" . js-mode))
@@ -639,37 +585,18 @@ folder, otherwise delete a word"
                   (replace-match "")))
               (apply orig rest)))
 
-  (add-hook 'prog-mode-hook #'rainbow-delimiters-mode)
-(add-hook 'prog-mode-hook #'rainbow-mode
-          )
-(add-hook 'js-mode-hook #'tree-sitter-mode)
-(add-hook 'js-mode-hook #'lsp-mode)
-(add-hook 'js-mode-hook #'lsp)
-(add-hook 'js-mode-hook #'prettier-js-mode)
 
-;;(add-hook 'js-mode-hook (
-;;                         lambda ()
-;;                                (add-hook 'after-save-hook 'lsp-organize-imports)))
 
 (use-package prettier-js
   :ensure t
-  :defer t
   :config
   (add-hook 'js-mode-hook #'prettier-js-mode)
   (add-hook 'typescript-mode-hook #'prettier-js-mode)
   )
 
-;;Loading tree-sitter package
-(use-package tree-sitter-langs :ensure t
-  :defer t
-  :config
-  (global-tree-sitter-mode)
-  )
-(use-package tree-sitter :ensure t
-  :defer t)
 ;; ================== End LSP MODE ===============
 ;; ==================  org MODE ===============
-(use-package org-modern :ensure t :defer t)
+
 (add-hook 'org-mode-hook #'org-modern-mode)
 (add-hook 'org-agenda-finalize-hook #'org-modern-agenda)
 ;; Add frame borders and window dividers
@@ -682,6 +609,10 @@ folder, otherwise delete a word"
   (face-spec-reset-face face)
   (set-face-foreground face (face-attribute 'default :background)))
 (set-face-background 'fringe (face-attribute 'default :background))
+(setq org-ellipsis " ▾")
+(setq org-agenda-start-with-log-mode t)
+(setq org-log-done 'time)
+(setq org-log-into-drawer t)
 
 (setq
  ;; Edit settings
@@ -708,8 +639,7 @@ folder, otherwise delete a word"
 
 (global-org-modern-mode)
 
-(use-package org-jira :ensure t :defer t)
-
+(use-package org-jira :ensure t)
 (setq jiralib-url "https://falkondata.atlassian.net")
 ;; ================== End org MODE ===============
 ;; ==================legder MODE ===============
@@ -733,15 +663,13 @@ folder, otherwise delete a word"
 (delete 'company-dabbrev company-backends)
 (use-package company-ledger
   :ensure company
-  :ensure t
-  :defer t
   :init
   (with-eval-after-load 'company
     (add-to-list 'company-backends 'company-ledger)))
-(use-package flycheck-ledger :after ledger-mode :defer t)
+(use-package flycheck-ledger :after ledger-mode)
 (eval-after-load 'flycheck '(require 'flycheck-ledger))
 (global-flycheck-mode t)
-(use-package org-contrib :ensure t :defer t)
+(use-package org-contrib :ensure t)
 (org-babel-do-load-languages
  'org-babel-load-languages
  '(
@@ -749,24 +677,7 @@ folder, otherwise delete a word"
    ))
 
 ;; ================== End ledger MODE ===============
-(use-package tldr :ensure t :defer t
-  :config
-  (setq tldr-enabled-categories '("common" "linux" "osx" "sunos"))
-  )
-
-(use-package projectile
-  :defer t
-  :diminish projectile-mode
-  :config (projectile-mode)
-  :bind-keymap ("C-c p" . projectile-command-map)
-  :init
-  (when (file-directory-p "g:/projects/")
-    (setq projectile-project-search-path '("g:/projects"))
-    (setq projectile-switch-project-action #'projectile-dired)
-    )
-  )
-(use-package hydra :ensure t
-  :defer t)
+(use-package hydra)
 
 (defhydra hydra-text-scale (:timeout 4)
   "scale text"
@@ -879,10 +790,47 @@ folder, otherwise delete a word"
         display-buffer-reuse-window
         display-buffer-same-window))
 
-(use-package all-the-icons-dired)
-(use-package dired-single)
-(use-package dired-ranger)
-(use-package dired-collapse)
+;; If a popup does happen, don't resize windows to be equal-sized
+(setq even-window-sizes nil)
+
+(defun dw/popper-window-height (window)
+  (let (buffer-mode (with-current-buffer (window-buffer window)
+                      major-mode))
+    (pcase buffer-mode
+      ('exwm-mode 40)
+      (_ 15))))
+
+(setup (:pkg popper
+             :host github
+             :repo "karthink/popper"
+             :build (:not autoloads))
+  (:global "C-M-'" popper-toggle-latest
+           "M-'" popper-cycle
+           "C-M-\"" popper-toggle-type)
+  (:option popper-window-height 12
+           ;; (popper-window-height
+           ;; (lambda (window)
+           ;;   (let ((buffer-mode (with-current-buffer (window-buffer window)
+           ;;                        major-mode)))
+           ;;     (message "BUFFER MODE: %s" buffer-mode)
+           ;;     (pcase buffer-mode
+           ;;       ('exwm-mode 40)
+           ;;       ('helpful-mode 20)
+           ;;       ('eshell-mode (progn (message "eshell!") 10))
+           ;;       (_ 15)))))
+           popper-reference-buffers '("^\\*eshell\\*"
+                                      "^vterm"
+                                      help-mode
+                                      helpful-mode
+                                      compilation-mode))
+  (require 'popper) ;; Needed because I disabled autoloads
+  (popper-mode 1))
+
+
+(setup (:pkg all-the-icons-dired))
+(setup (:pkg dired-single))
+(setup (:pkg dired-ranger))
+(setup (:pkg dired-collapse))
 
 ;; (setup dired
 (setq dired-listing-switches "-agho --group-directories-first"
@@ -908,37 +856,36 @@ folder, otherwise delete a word"
               (all-the-icons-dired-mode 1))
             (hl-line-mode 1)))
 
-(evil-collection-define-key 'normal 'dired-mode-map
-  "h" 'dired-single-up-directory
-  "H" 'dired-omit-mode
-  "l" 'dired-single-buffer
-  "y" 'dired-ranger-copy
-  "X" 'dired-ranger-move
-  "p" 'dired-ranger-paste)
+;; (evil-collection-define-key 'normal 'dired-mode-map
+;;   "h" 'dired-single-up-directory
+;;   "H" 'dired-omit-mode
+;;   "l" 'dired-single-buffer
+;;   "y" 'dired-ranger-copy
+;;   "X" 'dired-ranger-move
+;;   "p" 'dired-ranger-paste)
 
-(use-package dired-rainbow :ensure t
-  :config
-  (dired-rainbow-define-chmod directory "#6cb2eb" "d.*")
-  (dired-rainbow-define html "#eb5286" ("css" "less" "sass" "scss" "htm" "html" "jhtm" "mht" "eml" "mustache" "xhtml"))
-  (dired-rainbow-define xml "#f2d024" ("xml" "xsd" "xsl" "xslt" "wsdl" "bib" "json" "msg" "pgn" "rss" "yaml" "yml" "rdata"))
-  (dired-rainbow-define document "#9561e2" ("docm" "doc" "docx" "odb" "odt" "pdb" "pdf" "ps" "rtf" "djvu" "epub" "odp" "ppt" "pptx"))
-  (dired-rainbow-define markdown "#ffed4a" ("org" "etx" "info" "markdown" "md" "mkd" "nfo" "pod" "rst" "tex" "textfile" "txt"))
-  (dired-rainbow-define database "#6574cd" ("xlsx" "xls" "csv" "accdb" "db" "mdb" "sqlite" "nc"))
-  (dired-rainbow-define media "#de751f" ("mp3" "mp4" "mkv" "MP3" "MP4" "avi" "mpeg" "mpg" "flv" "ogg" "mov" "mid" "midi" "wav" "aiff" "flac"))
-  (dired-rainbow-define image "#f66d9b" ("tiff" "tif" "cdr" "gif" "ico" "jpeg" "jpg" "png" "psd" "eps" "svg"))
-  (dired-rainbow-define log "#c17d11" ("log"))
-  (dired-rainbow-define shell "#f6993f" ("awk" "bash" "bat" "sed" "sh" "zsh" "vim"))
-  (dired-rainbow-define interpreted "#38c172" ("py" "ipynb" "rb" "pl" "t" "msql" "mysql" "pgsql" "sql" "r" "clj" "cljs" "scala" "js"))
-  (dired-rainbow-define compiled "#4dc0b5" ("asm" "cl" "lisp" "el" "c" "h" "c++" "h++" "hpp" "hxx" "m" "cc" "cs" "cp" "cpp" "go" "f" "for" "ftn" "f90" "f95" "f03" "f08" "s" "rs" "hi" "hs" "pyc" ".java"))
-  (dired-rainbow-define executable "#8cc4ff" ("exe" "msi"))
-  (dired-rainbow-define compressed "#51d88a" ("7z" "zip" "bz2" "tgz" "txz" "gz" "xz" "z" "Z" "jar" "war" "ear" "rar" "sar" "xpi" "apk" "xz" "tar"))
-  (dired-rainbow-define packaged "#faad63" ("deb" "rpm" "apk" "jad" "jar" "cab" "pak" "pk3" "vdf" "vpk" "bsp"))
-  (dired-rainbow-define encrypted "#ffed4a" ("gpg" "pgp" "asc" "bfe" "enc" "signature" "sig" "p12" "pem"))
-  (dired-rainbow-define fonts "#6cb2eb" ("afm" "fon" "fnt" "pfb" "pfm" "ttf" "otf"))
-  (dired-rainbow-define partition "#e3342f" ("dmg" "iso" "bin" "nrg" "qcow" "toast" "vcd" "vmdk" "bak"))
-  (dired-rainbow-define vc "#0074d9" ("git" "gitignore" "gitattributes" "gitmodules"))
-  (dired-rainbow-define-chmod executable-unix "#38c172" "-.*x.*")
-  )
+;;(setup (:pkg dired-rainbow))
+;;   (dired-rainbow-define-chmod directory "#6cb2eb" "d.*")
+;;   (dired-rainbow-define html "#eb5286" ("css" "less" "sass" "scss" "htm" "html" "jhtm" "mht" "eml" "mustache" "xhtml"))
+;;   (dired-rainbow-define xml "#f2d024" ("xml" "xsd" "xsl" "xslt" "wsdl" "bib" "json" "msg" "pgn" "rss" "yaml" "yml" "rdata"))
+;;   (dired-rainbow-define document "#9561e2" ("docm" "doc" "docx" "odb" "odt" "pdb" "pdf" "ps" "rtf" "djvu" "epub" "odp" "ppt" "pptx"))
+;;   (dired-rainbow-define markdown "#ffed4a" ("org" "etx" "info" "markdown" "md" "mkd" "nfo" "pod" "rst" "tex" "textfile" "txt"))
+;;   (dired-rainbow-define database "#6574cd" ("xlsx" "xls" "csv" "accdb" "db" "mdb" "sqlite" "nc"))
+;;   (dired-rainbow-define media "#de751f" ("mp3" "mp4" "mkv" "MP3" "MP4" "avi" "mpeg" "mpg" "flv" "ogg" "mov" "mid" "midi" "wav" "aiff" "flac"))
+;;   (dired-rainbow-define image "#f66d9b" ("tiff" "tif" "cdr" "gif" "ico" "jpeg" "jpg" "png" "psd" "eps" "svg"))
+;;   (dired-rainbow-define log "#c17d11" ("log"))
+;;   (dired-rainbow-define shell "#f6993f" ("awk" "bash" "bat" "sed" "sh" "zsh" "vim"))
+;;   (dired-rainbow-define interpreted "#38c172" ("py" "ipynb" "rb" "pl" "t" "msql" "mysql" "pgsql" "sql" "r" "clj" "cljs" "scala" "js"))
+;;   (dired-rainbow-define compiled "#4dc0b5" ("asm" "cl" "lisp" "el" "c" "h" "c++" "h++" "hpp" "hxx" "m" "cc" "cs" "cp" "cpp" "go" "f" "for" "ftn" "f90" "f95" "f03" "f08" "s" "rs" "hi" "hs" "pyc" ".java"))
+;;   (dired-rainbow-define executable "#8cc4ff" ("exe" "msi"))
+;;   (dired-rainbow-define compressed "#51d88a" ("7z" "zip" "bz2" "tgz" "txz" "gz" "xz" "z" "Z" "jar" "war" "ear" "rar" "sar" "xpi" "apk" "xz" "tar"))
+;;   (dired-rainbow-define packaged "#faad63" ("deb" "rpm" "apk" "jad" "jar" "cab" "pak" "pk3" "vdf" "vpk" "bsp"))
+;;   (dired-rainbow-define encrypted "#ffed4a" ("gpg" "pgp" "asc" "bfe" "enc" "signature" "sig" "p12" "pem"))
+;;   (dired-rainbow-define fonts "#6cb2eb" ("afm" "fon" "fnt" "pfb" "pfm" "ttf" "otf"))
+;;   (dired-rainbow-define partition "#e3342f" ("dmg" "iso" "bin" "nrg" "qcow" "toast" "vcd" "vmdk" "bak"))
+;;   (dired-rainbow-define vc "#0074d9" ("git" "gitignore" "gitattributes" "gitmodules"))
+;;   (dired-rainbow-define-chmod executable-unix "#38c172" "-.*x.*")
+
 (defun dw/dired-link (path)
   (lexical-let ((target path))
                (lambda () (interactive) (message "Path: %s" target) (dired target))))
@@ -953,21 +900,15 @@ folder, otherwise delete a word"
 ;;   "dv"  `(,(dw/dired-link "~/Videos") :which-key "Videos")
 ;;   "d."  `(,(dw/dired-link "~/.dotfiles") :which-key "dotfiles")
 ;;   "de"  `(,(dw/dired-link "~/.emacs.d") :which-key ".emacs.d"))
-(use-package with-editor
-  :ensure t
-  :defer t
-  )
-(use-package magit
-  :after with-editor
-  :ensure t
-  :defer t
-  :config
-  (global-set-key "C-M-;" 'magit-status)
-  )
-(use-package magit-todos :after magit :defer t)
 
-(use-package git-link :defer t
-  :config
+(setup (:pkg magit)
+  (:also-load magit-todos)
+  (:global "C-M-;" magit-status)
+  (:option magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+
+(setup (:pkg magit-todos))
+
+(setup (:pkg git-link)
   (setq git-link-open-in-browser t)
   )
 
@@ -997,13 +938,14 @@ folder, otherwise delete a word"
       (set-face-attribute (car face) nil :weight 'normal :height (cdr face)))))
 
 
+(setup (:pkg rainbow-delimiters)
+  (:hook-into prog-mode))
 
 (setup (:pkg rainbow-mode)
   (:hook-into org-mode
               emacs-lisp-mode
               web-mode
               typescript-mode
-              js-mode
               js2-mode))
 
 (defun read-file (file-path)
@@ -1119,8 +1061,8 @@ folder, otherwise delete a word"
 
 (setup eshell
   (add-hook 'eshell-first-time-mode-hook #'dw/eshell-configure)
-  (setq eshell-directory-name "g:/projects"
-        eshell-aliases-file (expand-file-name "g:/projects/eshell")))
+  (setq eshell-directory-name "~/.dotfiles/.emacs.d/eshell/"
+        eshell-aliases-file (expand-file-name "~/.dotfiles/.emacs.d/eshell/alias")))
 
 (setup (:pkg exec-path-from-shell)
   (setq exec-path-from-shell-check-startup-files nil)
@@ -1146,6 +1088,8 @@ folder, otherwise delete a word"
   (:hook-into eshell-mode))
 
 
+;; Binding will be set by desktop config
+;; (setup (:pkg app-launcher))
 
 ;; (setup (:pkg avy)
 ;;   (dw/leader-key-def
