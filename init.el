@@ -1,3 +1,4 @@
+;; -*- lexical-binding: t; -*-
 ;; You will most likely need to adjust this font size for your system!
 (defvar runemacs/default-font-size 100)
 
@@ -116,31 +117,81 @@ installed via Guix.")
   (gcmh-mode 1)
   )
 
-(use-package vlf)
-(defun my-find-file-check-make-large-file-read-only-hook ()
-  "If a file is over a given size, make the buffer read only."
-  (when (> (buffer-size) (* 10 1024 1024))
-    (setq buffer-read-only t)
-    (buffer-disable-undo)
-    (fundamental-mode)
-                                        ; (message "Buffer is set to read-only because it is large.  Undo also disabled.")
-    ))
 
-(add-hook 'find-file-hook 'my-find-file-check-make-large-file-read-only-hook)
-(add-hook 'so-long-hook 'my-so-long-hook)
-(defun my-so-long-hook ()
-  "Used in `so-long-hook'."
-  ;; Disable the old `idle-highlight' (pre-`idle-highlight-mode')
-  (when (bound-and-true-p idle-highlight-timer)
-    (cancel-timer idle-highlight-timer)
-    (setq idle-highlight-timer nil)))
-(global-so-long-mode 1)
-(use-package dashboard
-  :ensure t
-  :config
-  (dashboard-setup-startup-hook))
+;; ============== Editor connfiguration ===============
+(cd "g:/projects/")
+
+;; Set default connection mode to SSH
+(setq tramp-default-method "ssh")
 
 
+(setq inhibit-startup-message t)
+(set-language-environment "UTF-8")
+
+(set-default-coding-systems 'utf-8)
+
+(scroll-bar-mode -1)        ; Disable visible scrollbar
+(electric-pair-mode t)
+(auto-fill-mode 1)
+(abbrev-mode 1)
+(subword-mode 1)
+(electric-layout-mode t)
+(show-paren-mode 1)
+(tool-bar-mode -1)          ; Disable the toolbar
+(tooltip-mode -1)           ; Disable tooltips
+
+(setq compile-command "")
+(global-set-key (kbd "<C-tab>") 'up-list)
+(global-set-key (kbd "<backtab>") 'backward-up-list)
+(setq-default indent-tabs-mode nil)
+(setq-default tab-width 2)
+(setq-default evil-shift-width tab-width)
+
+(set-fringe-mode 10)        ; Give some breathing room
+(menu-bar-mode -1)            ; Disable the menu bar
+(tab-bar-mode t)
+;; maximize sccreen and windowSet frame transparency and maximize windows by default.
+(add-to-list 'default-frame-alist '(alpha . (85 . 90)))
+(set-frame-parameter (selected-frame) 'alpha '(85 . 90))
+(add-to-list 'default-frame-alist '(fullscreen . maximized))
+(add-hook 'window-setup-hook 'toggle-frame-fullscreen t)
+(add-hook 'window-setup-hook 'toggle-frame-maximized t)
+;; minimize/maximize code folds
+(add-hook 'prog-mode-hook #'(lambda () (hs-minor-mode t)))
+;; Set up the visible bell
+(setq visible-bell t)
+
+(set-face-attribute 'default nil :font "Fira Code Retina" :height runemacs/default-font-size)
+
+(column-number-mode)
+;; Enable line numbers for some modes
+(dolist (mode '(text-mode-hook
+                prog-mode-hook
+                conf-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 1))))
+
+(global-display-line-numbers-mode t)
+(setq display-line-numbers-type 'relative)
+
+(setq large-file-warning-threshold nil)
+
+(setq vc-follow-symlinks t)
+
+(setq ad-redefinition-action 'accept)
+;;Basic Customization
+(setq display-time-format "%l:%M %p %b %y"
+      display-time-default-load-average nil)
+(display-time-mode t)
+;; Revert Dired and other buffers
+(setq global-auto-revert-non-file-buffers t)
+
+;; Revert buffers when the underlying file has changed
+(global-auto-revert-mode 1)
+
+;; Make ESC quit prompts
+(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+(global-set-key (kbd "C-M-u") 'universal-argument)
+;; ============ Editor ======================
 ;; ================== Evil package =========================
 (use-package evil
   :init
@@ -185,6 +236,7 @@ installed via Guix.")
 (define-key evil-normal-state-map (kbd "<right>") 'dw/dont-arrow-me-bro)
 (define-key evil-normal-state-map (kbd "<down>") 'dw/dont-arrow-me-bro)
 (define-key evil-normal-state-map (kbd "<up>") 'dw/dont-arrow-me-bro)
+(define-key evil-insert-state-map (kbd "<backspace>") 'dw/dont-arrow-me-bro)
 (evil-global-set-key 'motion (kbd "<left>") 'dw/dont-arrow-me-bro)
 (evil-global-set-key 'motion (kbd "<right>") 'dw/dont-arrow-me-bro)
 (evil-global-set-key 'motion (kbd "<down>") 'dw/dont-arrow-me-bro)
@@ -234,86 +286,6 @@ folder, otherwise delete a word"
 (setup (:pkg evil-nerd-commenter)
   (:global "M-/" evilnc-comment-or-uncomment-lines))
 
-(use-package tree-sitter
-  :ensure t
-  :config
-  ;; (tree-sitter-hl-mode)
-  (global-tree-sitter-mode))
-(use-package tree-sitter-langs
-  :after tree-sitter
-  :ensure t)
-
-;; ============== Editor connfiguration ===============
-(cd "g:/projects/")
-
-;; Set default connection mode to SSH
-(setq tramp-default-method "ssh")
-
-
-(setq inhibit-startup-message t)
-(set-language-environment "UTF-8")
-
-(set-default-coding-systems 'utf-8)
-
-(scroll-bar-mode -1)        ; Disable visible scrollbar
-(electric-pair-mode t)
-(auto-fill-mode 1)
-(abbrev-mode 1)
-(subword-mode 1)
-(electric-layout-mode t)
-(show-paren-mode 1)
-(tool-bar-mode -1)          ; Disable the toolbar
-(tooltip-mode -1)           ; Disable tooltips
-
-(setq-default indent-tabs-mode nil)
-(setq-default tab-width 2)
-(setq-default evil-shift-width tab-width)
-
-(set-fringe-mode 10)        ; Give some breathing room
-(menu-bar-mode -1)            ; Disable the menu bar
-(tab-bar-mode t)
-;; maximize sccreen and windowSet frame transparency and maximize windows by default.
-(add-to-list 'default-frame-alist '(alpha . (80 . 80)))
-(set-frame-parameter (selected-frame) 'alpha '(80 . 80))
-(add-to-list 'default-frame-alist '(fullscreen . maximized))
-(add-hook 'window-setup-hook 'toggle-frame-fullscreen t)
-(add-hook 'window-setup-hook 'toggle-frame-maximized t)
-;; minimize/maximize code folds
-(add-hook 'prog-mode-hook #'(lambda () (hs-minor-mode t)))
-;; Set up the visible bell
-(setq visible-bell t)
-
-(set-face-attribute 'default nil :font "Fira Code Retina" :height runemacs/default-font-size)
-
-(column-number-mode)
-;; Enable line numbers for some modes
-(dolist (mode '(text-mode-hook
-                prog-mode-hook
-                conf-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 1))))
-
-(global-display-line-numbers-mode t)
-(setq display-line-numbers-type 'relative)
-
-(setq large-file-warning-threshold nil)
-
-(setq vc-follow-symlinks t)
-
-(setq ad-redefinition-action 'accept)
-;;Basic Customization
-(setq display-time-format "%l:%M %p %b %y"
-      display-time-default-load-average nil)
-(display-time-mode t)
-;; Revert Dired and other buffers
-(setq global-auto-revert-non-file-buffers t)
-
-;; Revert buffers when the underlying file has changed
-(global-auto-revert-mode 1)
-
-;; Make ESC quit prompts
-(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
-(global-set-key (kbd "C-M-u") 'universal-argument)
-;; ============ Editor ======================
 (setup (:require paren)
   (set-face-attribute 'show-paren-match-expression nil :background "#363e4a")
   (show-paren-mode 1))
@@ -411,20 +383,23 @@ folder, otherwise delete a word"
   (rune/leader-keys
     "t"  '(:ignore t :which-key "toggles")
     "es" '(eshell :which-key "eshell")
+    "ji" '(org-jira-create-issue :which-key "create jira issue")
     "mm" '(magit :which-key "magit")
+    "mc" '(magit-clone :which-key "magit clone")
     "se" '(setenv :which-key "set env")
+    "hl" '(tree-sitter-hl-mode :which-key "tree sitter highlight mode")
     "cc" '(compile :which-key "Compile")
     "cr" '(recompile :which-key "recompile")
     "cb" '(eval-buffer :which-key "Eval buffer")
     "aa" '(org-agenda-list :which-key "Agenda list")
-    "l" '(:keymap lsp-command-map :package lsp-mode :which-key "lsp commands")
+    "lr" '(lsp-rename :which-key "lsp rename")
+    "lc" '(:keymap lsp-command-map :package lsp-mode :which-key "lsp commands")
     ))
 
 
 ;; ================= LSP MODE ===================
 ;;
 ;;
-(setq compile-command "")
 (use-package js
   :ensure nil
   :mode ("\\.js?\\'" . js2-mode)
@@ -517,7 +492,17 @@ folder, otherwise delete a word"
          )
   :ensure t
   )
+(use-package tree-sitter
+  :after lsp-mode
+  :ensure t
+  :config
+  (tree-sitter-hl-mode)
+)
 
+ (use-package tree-sitter-langs
+  :after tree-sitter
+  :ensure t
+)
 (use-package company
   :hook (prog-mode . company-mode)
   :bind ("TAB" . company-complete)
@@ -550,13 +535,15 @@ folder, otherwise delete a word"
   :hook ((prog-mode . flycheck-mode))
   :config
   (setq flycheck-check-syntax-automatically '(save mode-enabled newline))
-  (setq flycheck-display-errors-delay 0.1))
+  (setq flycheck-display-errors-delay 0.0))
 (use-package flycheck-posframe
   :ensure t
   :after flycheck
   :config
   (flycheck-posframe-configure-pretty-defaults)
+(set-face-attribute 'flycheck-posframe-error-face nil :inherit nil :foreground "red") (set-face-attribute 'flycheck-posframe-warning-face nil :foreground "orange") (set-face-attribute 'flycheck-posframe-info-face nil :foreground "blue") (set-face-attribute 'flycheck-posframe-border-face nil :foreground "#dc752f")
   (add-hook 'flycheck-mode-hook #'flycheck-posframe-mode))
+
 (use-package rjsx-mode
   :ensure t
   :config
@@ -595,7 +582,194 @@ folder, otherwise delete a word"
   )
 
 ;; ================== End LSP MODE ===============
+
+(use-package vlf)
+(defun my-find-file-check-make-large-file-read-only-hook ()
+  "If a file is over a given size, make the buffer read only."
+  (when (> (buffer-size) (* 10 1024 1024))
+    (setq buffer-read-only t)
+    (buffer-disable-undo)
+    (fundamental-mode)
+                                        ; (message "Buffer is set to read-only because it is large.  Undo also disabled.")
+    ))
+
+(add-hook 'find-file-hook 'my-find-file-check-make-large-file-read-only-hook)
+(add-hook 'so-long-hook 'my-so-long-hook)
+(defun my-so-long-hook ()
+  "Used in `so-long-hook'."
+  ;; Disable the old `idle-highlight' (pre-`idle-highlight-mode')
+  (when (bound-and-true-p idle-highlight-timer)
+    (cancel-timer idle-highlight-timer)
+    (setq idle-highlight-timer nil)))
+(global-so-long-mode 1)
+(use-package dashboard
+  :ensure t
+  :config
+  (dashboard-setup-startup-hook))
+
+
 ;; ==================  org MODE ===============
+;; ==================  org roam MODE ===============
+(straight-use-package '(org :type built-in))
+
+(defun efs/org-mode-setup ()
+  (org-indent-mode)
+  (variable-pitch-mode 1)
+  (visual-line-mode 1))
+
+(use-package org
+  :hook (org-mode . efs/org-mode-setup)
+  :config
+  (setq org-ellipsis " ▾")
+
+  (setq org-agenda-start-with-log-mode t)
+  (setq org-log-done 'time)
+  (setq org-log-into-drawer t)
+
+  (setq org-agenda-files
+        '("g:/projects/org-notes/birthdates.org"
+          ))
+  (require 'org-habit)
+  (add-to-list 'org-modules 'org-habit)
+  (setq org-habit-graph-column 60)
+
+  (setq org-todo-keywords
+    '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
+      (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
+
+  (setq org-refile-targets
+    '(("Archive.org" :maxlevel . 1)
+      ("Tasks.org" :maxlevel . 1)))
+
+  ;; Save Org buffers after refiling!
+  (advice-add 'org-refile :after 'org-save-all-org-buffers)
+
+  (setq org-tag-alist
+    '((:startgroup)
+       ; Put mutually exclusive tags here
+       (:endgroup)
+       ("@errand" . ?E)
+       ("@home" . ?H)
+       ("@work" . ?W)
+       ("agenda" . ?a)
+       ("planning" . ?p)
+       ("publish" . ?P)
+       ("batch" . ?b)
+       ("note" . ?n)
+       ("idea" . ?i)))
+
+  ;; Configure custom agenda views
+  (setq org-agenda-custom-commands
+   '(("d" "Dashboard"
+     ((agenda "" ((org-deadline-warning-days 7)))
+      (todo "NEXT"
+        ((org-agenda-overriding-header "Next Tasks")))
+      (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))))
+
+    ("n" "Next Tasks"
+     ((todo "NEXT"
+        ((org-agenda-overriding-header "Next Tasks")))))
+
+    ("W" "Work Tasks" tags-todo "+work-email")
+
+    ;; Low-effort next actions
+    ("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
+     ((org-agenda-overriding-header "Low Effort Tasks")
+      (org-agenda-max-todos 20)
+      (org-agenda-files org-agenda-files)))
+
+    ("w" "Workflow Status"
+     ((todo "WAIT"
+            ((org-agenda-overriding-header "Waiting on External")
+             (org-agenda-files org-agenda-files)))
+      (todo "REVIEW"
+            ((org-agenda-overriding-header "In Review")
+             (org-agenda-files org-agenda-files)))
+      (todo "PLAN"
+            ((org-agenda-overriding-header "In Planning")
+             (org-agenda-todo-list-sublevels nil)
+             (org-agenda-files org-agenda-files)))
+      (todo "BACKLOG"
+            ((org-agenda-overriding-header "Project Backlog")
+             (org-agenda-todo-list-sublevels nil)
+             (org-agenda-files org-agenda-files)))
+      (todo "READY"
+            ((org-agenda-overriding-header "Ready for Work")
+             (org-agenda-files org-agenda-files)))
+      (todo "ACTIVE"
+            ((org-agenda-overriding-header "Active Projects")
+             (org-agenda-files org-agenda-files)))
+      (todo "COMPLETED"
+            ((org-agenda-overriding-header "Completed Projects")
+             (org-agenda-files org-agenda-files)))
+      (todo "CANC"
+            ((org-agenda-overriding-header "Cancelled Projects")
+             (org-agenda-files org-agenda-files)))))))
+
+  (setq org-capture-templates
+    `(("t" "Tasks / Projects")
+      ("tt" "Task" entry (file+olp "~/Projects/Code/emacs-from-scratch/OrgFiles/Tasks.org" "Inbox")
+           "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
+
+      ("j" "Journal Entries")
+      ("jj" "Journal" entry
+           (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+           "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
+           ;; ,(dw/read-file-as-string "~/Notes/Templates/Daily.org")
+           :clock-in :clock-resume
+           :empty-lines 1)
+      ("jm" "Meeting" entry
+           (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+           "* %<%I:%M %p> - %a :meetings:\n\n%?\n\n"
+           :clock-in :clock-resume
+           :empty-lines 1)
+
+      ("w" "Workflows")
+      ("we" "Checking Email" entry (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
+           "* Checking Email :email:\n\n%?" :clock-in :clock-resume :empty-lines 1)
+
+      ("m" "Metrics Capture")
+      ("mw" "Weight" table-line (file+headline "~/Projects/Code/emacs-from-scratch/OrgFiles/Metrics.org" "Weight")
+       "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t)))
+
+  (define-key global-map (kbd "C-c j")
+    (lambda () (interactive) (org-capture nil "jj")))
+
+  ;; (efs/org-font-setup)
+)
+(use-package org-bullets
+  :after org
+  :hook (org-mode . org-bullets-mode)
+  :custom
+  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+
+(defun efs/org-mode-visual-fill ()
+  (setq visual-fill-column-width 100
+        visual-fill-column-center-text t)
+  (visual-fill-column-mode 1))
+
+(use-package visual-fill-column
+  :hook (org-mode . efs/org-mode-visual-fill))
+
+(org-babel-do-load-languages
+  'org-babel-load-languages
+  '((emacs-lisp . t)
+    (python . t)))
+
+(push '("conf-unix" . conf-unix) org-src-lang-modes)
+
+;; Automatically tangle our Emacs.org config file when we save it
+(defun efs/org-babel-tangle-config ()
+  (when (string-equal (buffer-file-name)
+                      (expand-file-name "~/Projects/Code/emacs-from-scratch/Emacs.org"))
+    ;; Dynamic scoping to the rescue
+    (let ((org-confirm-babel-evaluate nil))
+      (org-babel-tangle))))
+
+(add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
+
+;; ==================  end org roam MODE ===============
+
 
 (add-hook 'org-mode-hook #'org-modern-mode)
 (add-hook 'org-agenda-finalize-hook #'org-modern-agenda)
