@@ -123,7 +123,7 @@ installed via Guix.")
 
 ;; Set default connection mode to SSH
 (setq tramp-default-method "ssh")
-
+(setq find-program ( getenv  "find-program" ))
 
 (setq inhibit-startup-message t)
 (set-language-environment "UTF-8")
@@ -302,6 +302,7 @@ folder, otherwise delete a word"
 
 ;; (use-package command-log-mode)
 ;; ============ Styling ================
+(use-package golden-ratio :ensure t)
 (use-package ivy
   :diminish
   :bind (("C-s" . swiper)
@@ -384,7 +385,7 @@ folder, otherwise delete a word"
   :config
   (general-create-definer rune/leader-keys
     :keymaps '(normal insert visual  emacs )
-    :prefix "SPC"
+    :prefix "C-SPC"
     :global-prefix "C-SPC")
 
   (rune/leader-keys
@@ -401,6 +402,8 @@ folder, otherwise delete a word"
     "aa" '(org-agenda-list :which-key "Agenda list")
     "gl" '(git-link :which-key "git link")
     "gh" '(git-link-homepage :which-key "git homepage")
+    "tff" '(toggle-frame-fullscreen :which-key "toggle frame fullscreen")
+    "fd" '(find-name-dired :which-key "find name dired")
     ))
 
 
@@ -1059,6 +1062,8 @@ folder, otherwise delete a word"
 (setup (:pkg git-link)
   (setq git-link-open-in-browser t)
   )
+(eval-after-load 'git-link
+  '(progn (add-to-list 'git-link-remote-alist '("fd-main" git-link-codecommit))))
 (setup (:pkg yaml-mode)
   (:file-match "\\.ya?ml\\'"))
 
