@@ -150,6 +150,8 @@ installed via Guix.")
 (set-fringe-mode 10)        ; Give some breathing room
 (menu-bar-mode -1)            ; Disable the menu bar
 (tab-bar-mode t)
+(desktop-save-mode 1)
+(setq confirm-kill-emacs 'yes-or-no-p)
 ;; maximize sccreen and windowSet frame transparency and maximize windows by default.
 (add-to-list 'default-frame-alist '(alpha . (85 . 90)))
 (set-frame-parameter (selected-frame) 'alpha '(85 . 90))
