@@ -397,6 +397,7 @@ folder, otherwise delete a word"
     "cr" '(recompile :which-key "recompile")
     "cb" '(eval-buffer :which-key "Eval buffer")
     "aa" '(org-agenda-list :which-key "Agenda list")
+    "dsm" '(desktop-save-mode :which-key "Desktop save mode")
     ))
 
 
