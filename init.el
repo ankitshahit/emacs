@@ -32,7 +32,270 @@
 (straight-use-package 'use-package)
 (straight-use-package '(setup :type git :host nil :repo "https://git.sr.ht/~pkal/setup"))
 (require 'setup)
-;; (require `orgd)
+;; Profile emacs startup
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (message "*** Emacs loaded in %s seconds with %d garbage collections."
+                     (emacs-init-time "%.2f")
+                     gcs-done)))
+
+(require 'package)
+
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                         ("org" . "https://orgmode.org/elpa/")
+                         ("elpa" . "https://elpa.gnu.org/packages/")
+                         ("org-contrib" . "https://elpa.nongnu.org/nongnu/")
+
+
+                         ))
+
+(package-initialize)
+(unless package-archive-contents
+  (package-refresh-contents))
+
+;; Initialize use-package on non-Linux platforms
+(unless (package-installed-p 'use-package)
+  (package-install 'use-package))
+
+(require 'use-package)
+(setq use-package-always-ensure t)
+;; Recipe is always a list
+;; Install via Guix if length == 1 or :guix t is present
+
+(setq backup-directory-alist '(("." . "~/.emacs.d/backup"))
+      backup-by-copying t    ; Don't delink hardlinks
+      version-control t      ; Use version numbers on backups
+      delete-old-versions t  ; Automatically delete excess backups
+      kept-new-versions 20   ; how many of the newest versions to keep
+      kept-old-versions 5    ; and how many of the old
+      )
+;; Initialize package sources
+(defvar dw/guix-emacs-packages '()
+  "Contains a list of all Emacs package names that must be
+installed via Guix.")
+
+;; Examples:
+;; - (org-roam :straight t)
+;; - (git-gutter :straight git-gutter-fringe)
+
+(defun dw/filter-straight-recipe (recipe)
+  (let* ((plist (cdr recipe))
+         (name (plist-get plist :straight)))
+    (cons (if (and name (not (equal name t)))
+              name
+            (car recipe))
+          (plist-put plist :straight nil))))
+
+(setup-define :pkg
+  (lambda (&rest recipe)
+    (if (and dw/is-guix-system
+             (or (eq (length recipe) 1)
+                 (plist-get (cdr recipe) :guix)))
+        `(add-to-list 'dw/guix-emacs-packages
+                      ,(or (plist-get recipe :guix)
+                           (concat "emacs-" (symbol-name (car recipe)))))
+      `(straight-use-package ',(dw/filter-straight-recipe recipe))))
+  :documentation "Install RECIPE via Guix or straight.el"
+  :shorthand #'cadr)
+
+;; Change the user-emacs-directory to keep unwanted things out of ~/.emacs.d
+(setq user-emacs-directory (expand-file-name "~/.cache/emacs/")
+      url-history-file (expand-file-name "url/history" user-emacs-directory))
+
+;; Use no-littering to automatically set common paths to the new user-emacs-directory
+(setup (:pkg no-littering)
+  (require 'no-littering))
+
+;; Keep customization settings in a temporary file (thanks Ambrevar!)
+(setq custom-file
+      (if (boundp 'server-socket-dir)
+          (expand-file-name "custom.el" server-socket-dir)
+        (expand-file-name (format "emacs-custom-%s.el" (user-uid)) temporary-file-directory)))
+(load custom-file t)
+(use-package gcmh
+  :config
+  (gcmh-mode 1)
+  )
+
+
+;; ============== Editor connfiguration ===============
+(cd "g:/projects/")
+
+;; Set default connection mode to SSH
+(setq tramp-default-method "ssh")
+
+
+(setq inhibit-startup-message t)
+(set-language-environment "UTF-8")
+
+(set-default-coding-systems 'utf-8)
+
+(scroll-bar-mode -1)        ; Disable visible scrollbar
+(electric-pair-mode t)
+(auto-fill-mode 1)
+(abbrev-mode 1)
+(subword-mode 1)
+(electric-layout-mode t)
+(show-paren-mode 1)
+(tool-bar-mode -1)          ; Disable the toolbar
+(tooltip-mode -1)           ; Disable tooltips
+
+(setq compile-command "")
+(global-set-key (kbd "<C-tab>") 'up-list)
+(global-set-key (kbd "<backtab>") 'backward-up-list)
+(setq-default indent-tabs-mode nil)
+(setq-default tab-width 2)
+(setq-default evil-shift-width tab-width)
+
+(set-fringe-mode 10)        ; Give some breathing room
+(menu-bar-mode -1)            ; Disable the menu bar
+(tab-bar-mode t)
+;; maximize sccreen and windowSet frame transparency and maximize windows by default.
+(add-to-list 'default-frame-alist '(alpha . (85 . 90)))
+(set-frame-parameter (selected-frame) 'alpha '(85 . 90))
+(add-to-list 'default-frame-alist '(fullscreen . maximized))
+(add-hook 'window-setup-hook 'toggle-frame-fullscreen t)
+(add-hook 'window-setup-hook 'toggle-frame-maximized t)
+;; minimize/maximize code folds
+(add-hook 'prog-mode-hook #'(lambda () (hs-minor-mode t)))
+;; Set up the visible bell
+(setq visible-bell t)
+
+(set-face-attribute 'default nil :font "Fira Code Retina" :height runemacs/default-font-size)
+
+(column-number-mode)
+;; Enable line numbers for some modes
+(dolist (mode '(text-mode-hook
+                prog-mode-hook
+                conf-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 1))))
+
+(global-display-line-numbers-mode t)
+(setq display-line-numbers-type 'relative)
+
+(setq large-file-warning-threshold nil)
+
+(setq vc-follow-symlinks t)
+
+(setq ad-redefinition-action 'accept)
+;;Basic Customization
+(setq display-time-format "%l:%M %p %b %y"
+      display-time-default-load-average nil)
+(display-time-mode t)
+;; Revert Dired and other buffers
+(setq global-auto-revert-non-file-buffers t)
+
+;; Revert buffers when the underlying file has changed
+(global-auto-revert-mode 1)
+
+;; Make ESC quit prompts
+(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+(global-set-key (kbd "C-M-u") 'universal-argument)
+;; ============ Editor ======================
+;; ================== Evil package =========================
+(use-package evil
+  :init
+  (setq evil-want-integration t)
+  (setq evil-want-keybinding nil)
+  (setq evil-want-C-u-scroll t)
+  (setq evil-want-minibuffer t)
+  (setq evil-want-fine-undo t)
+  (setq evil-undo-system 'undo-fu)
+  (setq evil-search-module 'evil-search)
+  :config
+  (setq evil-want-C-i-jump nil)
+  (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
+  (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
+
+  ;; Use visual line motions even outside of visual-line-mode buffers
+  (evil-global-set-key 'motion "j" 'evil-next-visual-line)
+  (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
+  (evil-set-initial-state 'messages-buffer-mode 'normal)
+  (evil-set-initial-state 'dashboard-mode 'normal
+
+                          )(evil-mode 1))
+
+(use-package undo-fu)
+
+(setq evil-want-keybinding nil)
+(use-package evil-collection
+  :init
+
+  :after evil
+  :config
+  (evil-collection-init))
+(use-package evil-matchit :ensure t :config (global-evil-matchit-mode 1))
+(use-package evil-surround :ensure t :config (global-evil-surround-mode 1))
+
+
+(defun dw/dont-arrow-me-bro ()
+  (interactive)
+  (message "Arrow keys are bad, you know?"))
+;; Disable arrow keys in normal and visual modes
+(define-key evil-normal-state-map (kbd "<left>") 'dw/dont-arrow-me-bro)
+(define-key evil-normal-state-map (kbd "<right>") 'dw/dont-arrow-me-bro)
+(define-key evil-normal-state-map (kbd "<down>") 'dw/dont-arrow-me-bro)
+(define-key evil-normal-state-map (kbd "<up>") 'dw/dont-arrow-me-bro)
+(define-key evil-insert-state-map (kbd "<backspace>") 'dw/dont-arrow-me-bro)
+(evil-global-set-key 'motion (kbd "<left>") 'dw/dont-arrow-me-bro)
+(evil-global-set-key 'motion (kbd "<right>") 'dw/dont-arrow-me-bro)
+(evil-global-set-key 'motion (kbd "<down>") 'dw/dont-arrow-me-bro)
+(evil-global-set-key 'motion (kbd "<up>") 'dw/dont-arrow-me-bro)
+
+(evil-set-initial-state 'messages-buffer-mode 'normal)
+(evil-set-initial-state 'dashboard-mode 'normal)
+(setq evil-want-fine-undo t)
+(define-key evil-normal-state-map (kbd "TAB") 'tab-to-tab-stop)
+
+
+(setq evil-magit-state 'normal)
+(setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
+(setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
+(setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
+(setq scroll-step 1) ;; keyboard scroll one line at a time
+(setq use-dialog-box nil)
+(setup ( :pkg evil-motion-trainer :host github :repo "martinbaillie/evil-motion-trainer" )
+  (setq evil-motion-trainer-super-annoying-mode t)
+  (setq evil-motion-trainer-threshold 3)
+  (global-evil-motion-trainer-mode)
+  )
+;;=========== End of evil mode ================
+(defun dw/minibuffer-backward-kill (arg)
+  "When minibuffer is completing a file name delete up to parent
+folder, otherwise delete a word"
+  (interactive "p")
+  (if minibuffer-completing-file-name
+      ;; Borrowed from https://github.com/raxod502/selectrum/issues/498#issuecomment-803283608
+      (if (string-match-p "/." (minibuffer-contents))
+          (zap-up-to-char (- arg) ?/)
+        (delete-minibuffer-contents))
+    (delete-word (- arg))))
+
+(setup (:pkg vertico)
+  ;; :straight '(vertico :host github
+  ;;                     :repo "minad/vertico"
+  ;;                     :branch "main")
+  (vertico-mode)
+  (:with-map vertico-map
+    (:bind "C-j" vertico-next
+           "C-k" vertico-previous
+           "C-f" vertico-exit))
+  (:with-map minibuffer-local-map
+    (:bind "M-h" dw/minibuffer-backward-kill))
+  (:option vertico-cycle t)
+  (custom-set-faces '(vertico-current ((t (:background "#3a3f5a"))))))
+
+(setup (:pkg ws-butler)
+  (:hook-into text-mode prog-mode))
+
+(setup (:pkg evil-nerd-commenter)
+  (:global "M-/" evilnc-comment-or-uncomment-lines))
+
+(setup (:require paren)
+  (set-face-attribute 'show-paren-match-expression nil :background "#363e4a")
+  (show-paren-mode 1))
+
+;; (require `org)
 ;; (setq org-clock-sound "C:\Users\ankit\Downloads\despair-metal-trailer-109943.mp3")
 
 ;; (use-package command-log-mode)
@@ -362,9 +625,6 @@
   :config
   (setq org-ellipsis " ▾")
 
-(setq org-redisplay-inline-images t)
-(setq org-startup-with-inline-images "inlineimages")
-(setq org-display-inline-images t)
   (setq org-agenda-start-with-log-mode t)
   (setq org-log-done 'time)
   (setq org-log-into-drawer t)
@@ -512,6 +772,7 @@
 (add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
 
 ;; ==================  end org roam MODE ===============
+
 
 (add-hook 'org-mode-hook #'org-modern-mode)
 (add-hook 'org-agenda-finalize-hook #'org-modern-agenda)
