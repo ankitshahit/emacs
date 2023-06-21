@@ -302,7 +302,7 @@ folder, otherwise delete a word"
 
 ;; (use-package command-log-mode)
 ;; ============ Styling ================
-(use-package golden-ratio :ensure t)
+(use-package golden-ratio :ensure t :config (golden-ratio-mode 1))
 (use-package ivy
   :diminish
   :bind (("C-s" . swiper)
