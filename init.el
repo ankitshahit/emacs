@@ -615,6 +615,9 @@ folder, otherwise delete a word"
 ;; ==================  org roam MODE ===============
 (straight-use-package '(org :type built-in))
 
+(setq org-startup-with-inline-images t)
+(setq org-display-inline-images t)
+(setq org-redisplay-inline-images t)
 (defun efs/org-mode-setup ()
   (org-indent-mode)
   (variable-pitch-mode 1)
