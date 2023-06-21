@@ -124,6 +124,7 @@ installed via Guix.")
 ;; Set default connection mode to SSH
 (setq tramp-default-method "ssh")
 (setq find-program ( getenv  "find-program" ))
+(setq markdown-program ( getenv  "markdown-program" ))
 
 (setq inhibit-startup-message t)
 (set-language-environment "UTF-8")
