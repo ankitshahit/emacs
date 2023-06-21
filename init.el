@@ -405,6 +405,7 @@ folder, otherwise delete a word"
     "gh" '(git-link-homepage :which-key "git homepage")
     "tff" '(toggle-frame-fullscreen :which-key "toggle frame fullscreen")
     "fd" '(find-name-dired :which-key "find name dired")
+    "gr" '(golden-ratio :which-key "golden ratio for windows")
     ))
 
 
@@ -513,6 +514,7 @@ folder, otherwise delete a word"
 (use-package tree-sitter-langs
   :after tree-sitter
   :ensure t
+  :commands (  tree-sitter-hl-mode)
   )
 (use-package company
   :hook (prog-mode . company-mode)
@@ -534,7 +536,7 @@ folder, otherwise delete a word"
 (setq company-minimum-prefix-length 1
       company-idle-delay 0.0) ;; default is 0.2
 (global-company-mode 1)
-(use-package company-terraform :after company :ensure t)
+(use-package company-terraform :after company :ensure t :commands (company-mode))
 (use-package company-restclient
   :defer t
   :after company)
@@ -823,7 +825,7 @@ folder, otherwise delete a word"
 
 (global-org-modern-mode)
 
-(use-package org-jira :ensure t)
+(use-package org-jira :ensure t :commands (org-jira-create-issue) )
 (setq jiralib-url "https://falkondata.atlassian.net")
 ;; ================== End org MODE ===============
 ;; ==================legder MODE ===============
