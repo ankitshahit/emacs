@@ -392,6 +392,7 @@ folder, otherwise delete a word"
   (rune/leader-keys
     "t"  '(:ignore t :which-key "toggles")
     "es" '(eshell :which-key "eshell")
+    "acf" '(company-capf :which-key "autocomplete company capf")
     "ji" '(org-jira-create-issue :which-key "create jira issue")
     "mm" '(magit :which-key "magit")
     "mc" '(magit-clone :which-key "magit clone")
@@ -403,9 +404,9 @@ folder, otherwise delete a word"
     "aa" '(org-agenda-list :which-key "Agenda list")
     "gl" '(git-link :which-key "git link")
     "gh" '(git-link-homepage :which-key "git homepage")
+    "gr" '(golden-ratio :which-key "golden ratio for windows")
     "tff" '(toggle-frame-fullscreen :which-key "toggle frame fullscreen")
     "fd" '(find-name-dired :which-key "find name dired")
-    "gr" '(golden-ratio :which-key "golden ratio for windows")
     ))
 
 
@@ -496,14 +497,16 @@ folder, otherwise delete a word"
         lsp-ui-doc-include-signature t
         lsp-ui-doc-position 'at-point
         lsp-ui-doc-show-with-cursor t))
+
 (use-package terraform-mode
-  :init (add-to-list 'company-backends 'company-terraform-init)
+  :config (add-to-list 'company-backends 'company-terraform-init)
   :mode (
          ( "\\.tf\\'" . terraform-mode )
          ( "\\.tfvars\\'" . terraform-mode )
          )
   :ensure t
   )
+
 (use-package tree-sitter
   :after lsp-mode
   :ensure t
@@ -847,11 +850,6 @@ folder, otherwise delete a word"
 (setup (:pkg hledger-mode :straight t)
   (:bind "TAB" completion-at-point))
 (delete 'company-dabbrev company-backends)
-(use-package company-ledger
-  :ensure company
-  :init
-  (with-eval-after-load 'company
-    (add-to-list 'company-backends 'company-ledger)))
 (use-package flycheck-ledger :after ledger-mode)
 (eval-after-load 'flycheck '(require 'flycheck-ledger))
 (global-flycheck-mode t)
