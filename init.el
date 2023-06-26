@@ -393,8 +393,9 @@ folder, otherwise delete a word"
 (use-package general
   :config
   (general-create-definer rune/leader-keys
-    :keymaps '(normal emacs )
-    :prefix "C-x C-a"
+    :keymaps '(normal visual insert emacs )
+    :prefix "C-SPC"
+    :global-prefix "C-SPC"
     )
 
   (rune/leader-keys
