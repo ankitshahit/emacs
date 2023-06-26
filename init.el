@@ -265,7 +265,7 @@ installed via Guix.")
 (use-package evil-god-state :ensure t
   :config (setq god-mode-alist '((nil . "C-") ("b" . "M-") ("B" . "C-M-"))))
 (use-package diminish :ensure t)
-(evil-define-key 'normal global-map "m" 'evil-execute-in-god-state)
+(evil-define-key 'normal global-map "m"  'evil-execute-in-god-state )
 (add-hook 'evil-god-state-entry-hook (lambda () (diminish 'god-local-mode)))
 (add-hook 'evil-god-state-exit-hook (lambda () (diminish-undo 'god-local-mode)))
 (evil-define-key 'god global-map [escape] 'evil-god-state-bail)
@@ -394,7 +394,7 @@ folder, otherwise delete a word"
   :config
   (general-create-definer rune/leader-keys
     :keymaps '(normal emacs )
-    :prefix "h,"
+    :prefix "C-x C-a"
     )
 
   (rune/leader-keys
@@ -445,7 +445,7 @@ folder, otherwise delete a word"
   :config
   (company-prescient-mode +1))
 (require `company)
-(setq lsp-keymap-prefix "<escape>, l")
+(setq lsp-keymap-prefix "C-a C-a l")
 
 (use-package lsp-mode
   :init (add-to-list 'company-backends 'company-capf)
