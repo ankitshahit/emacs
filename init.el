@@ -262,6 +262,14 @@ installed via Guix.")
   (setq evil-motion-trainer-threshold 6)
   (global-evil-motion-trainer-mode)
   )
+(use-package evil-god-state :ensure t
+  :config (setq god-mode-alist '((nil . "C-") ("b" . "M-") ("B" . "C-M-"))))
+(use-package diminish :ensure t)
+(evil-define-key 'normal global-map "m" 'evil-execute-in-god-state)
+(add-hook 'evil-god-state-entry-hook (lambda () (diminish 'god-local-mode)))
+(add-hook 'evil-god-state-exit-hook (lambda () (diminish-undo 'god-local-mode)))
+(evil-define-key 'god global-map [escape] 'evil-god-state-bail)
+
 ;;=========== End of evil mode ================
 (defun dw/minibuffer-backward-kill (arg)
   "When minibuffer is completing a file name delete up to parent
@@ -385,14 +393,16 @@ folder, otherwise delete a word"
 (use-package general
   :config
   (general-create-definer rune/leader-keys
-    :keymaps '(normal insert visual  emacs )
-    :prefix "C-SPC"
-    :global-prefix "C-SPC")
+    :keymaps '(normal emacs )
+    :prefix "h,"
+    )
 
   (rune/leader-keys
     "t"  '(:ignore t :which-key "toggles")
+    "ed" '(edit-server-start  :which-key "edit server start")
     "es" '(eshell :which-key "eshell")
     "acf" '(company-capf :which-key "autocomplete company capf")
+    "kb" '(only-current-buffer :which-key "kill all buffers except current one")
     "ji" '(org-jira-create-issue :which-key "create jira issue")
     "mm" '(magit :which-key "magit")
     "mc" '(magit-clone :which-key "magit clone")
@@ -407,6 +417,7 @@ folder, otherwise delete a word"
     "gr" '(golden-ratio :which-key "golden ratio for windows")
     "tff" '(toggle-frame-fullscreen :which-key "toggle frame fullscreen")
     "fd" '(find-name-dired :which-key "find name dired")
+    "l" '(:keymap lsp-command-map :package lsp-mode :which-key "lsp mode")
     ))
 
 
@@ -434,7 +445,7 @@ folder, otherwise delete a word"
   :config
   (company-prescient-mode +1))
 (require `company)
-(setq lsp-keymap-prefix "C-SPC l")
+(setq lsp-keymap-prefix "<escape>, l")
 
 (use-package lsp-mode
   :init (add-to-list 'company-backends 'company-capf)
@@ -547,19 +558,33 @@ folder, otherwise delete a word"
 (use-package company-web
   :defer t
   :after (web-mode company))
+
+;;========================== flycheck ==================
 (use-package flycheck
   :hook ((prog-mode . flycheck-mode))
   :config
   (setq flycheck-check-syntax-automatically '(save mode-enabled newline))
   (setq flycheck-display-errors-delay 0.0))
+
 (use-package flycheck-posframe
   :ensure t
   :after flycheck
   :config
   (flycheck-posframe-configure-pretty-defaults)
-  (set-face-attribute 'flycheck-posframe-error-face nil :inherit nil :foreground "red") (set-face-attribute 'flycheck-posframe-warning-face nil :foreground "orange") (set-face-attribute 'flycheck-posframe-info-face nil :foreground "blue") (set-face-attribute 'flycheck-posframe-border-face nil :foreground "#dc752f")
+  (set-face-attribute 'flycheck-posframe-error-face nil :inherit nil :foreground "red")
+  (set-face-attribute 'flycheck-posframe-warning-face nil :foreground "orange")
+  (set-face-attribute 'flycheck-posframe-info-face nil :foreground "blue")
+  (set-face-attribute 'flycheck-posframe-border-face nil :foreground "#dc752f")
   (add-hook 'flycheck-mode-hook #'flycheck-posframe-mode))
 
+(use-package flycheck-inline :ensure t :after flycheck-mode )
+
+(setq flycheck-inline-display-function (lambda (msg pos)
+ (flycheck-inline-display-phantom msg))
+ flycheck-inline-clear-function #'flycheck-inline-clear-phantoms)
+(with-eval-after-load 'flycheck
+  (add-hook 'flycheck-mode-hook #'flycheck-inline-mode))
+;;========================== end flycheck ==================
 (use-package rjsx-mode
   :ensure t
   :config
@@ -1239,8 +1264,38 @@ folder, otherwise delete a word"
   (setq esh-autosuggest-delay 0.3)
   (:hook dw/esh-autosuggest-setup)
   (:hook-into eshell-mode))
+;; ========================= firefox ===============
+(use-package edit-server
+  :ensure t
+  :commands edit-server-start
+  :init (if after-init-time
+              (edit-server-start)
+            (add-hook 'after-init-hook
+                      #'(lambda() (edit-server-start))))
+  :config (setq edit-server-new-frame-alist
+                '((name . "Edit with Emacs FRAME")
+                  (top . 200)
+                  (left . 200)
+                  (width . 80)
+                  (height . 25)
+                  (minibuffer . t)
+                  (menu-bar-lines . t)
+                  (window-system . x))))
 
+(setup :straight '(edit-server-htmlize :host github))
+ (when (and (daemonp) (require 'edit-server nil :noerror))
+   (edit-server-start))
+(when (require 'edit-server nil :noerror)
+  (setq edit-server-new-frame nil)
+  (edit-server-start))
+  (add-hook 'edit-server-start-hook 'markdown-mode)
 
+;; ========================= end firefox ===============
+
+(defun only-current-buffer ()
+  (interactive)
+    (mapc 'kill-buffer (cdr (buffer-list (current-buffer)))))
+;;=======================================================
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
