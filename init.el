@@ -1,10 +1,15 @@
-;; -*- lexical-binding: t; -*-
-;; You will most likely need to adjust this font size for your system!
+;;; -*- lexical-binding: t; -*-
+;;;; You will most likely need to adjust this font size for your system!
 (defvar runemacs/default-font-size 100)
+(defun my-minibuffer-setup-hook ()
+  (setq gc-cons-threshold most-positive-fixnum))
 
-(setq gc-cons-threshold (* 100 1024 1024))
-;; -*- lexical-binding: t; -*-
-;; The default is 800 kilobytes.  Measured in bytes.
+(defun my-minibuffer-exit-hook ()
+  (setq gc-cons-threshold 800000))
+
+(add-hook 'minibuffer-setup-hook #'my-minibuffer-setup-hook)
+(add-hook 'minibuffer-exit-hook #'my-minibuffer-exit-hook)
+
 (unless (featurep 'straight)
   ;; Bootstrap straight.el
   (defvar bootstrap-version)
@@ -151,7 +156,6 @@ installed via Guix.")
 (set-fringe-mode 10)        ; Give some breathing room
 (menu-bar-mode -1)            ; Disable the menu bar
 (tab-bar-mode t)
-(desktop-save-mode 1)
 (setq confirm-kill-emacs 'yes-or-no-p)
 ;; maximize sccreen and windowSet frame transparency and maximize windows by default.
 (add-to-list 'default-frame-alist '(alpha . (85 . 90)))
@@ -257,15 +261,12 @@ installed via Guix.")
 (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
 (setq scroll-step 1) ;; keyboard scroll one line at a time
 (setq use-dialog-box nil)
-(setup ( :pkg evil-motion-trainer :host github :repo "martinbaillie/evil-motion-trainer" )
-  (setq evil-motion-trainer-super-annoying-mode t)
-  (setq evil-motion-trainer-threshold 6)
-  (global-evil-motion-trainer-mode)
-  )
+;; (dolist (key '("ESC"))
+;;   (global-unset-key key))
 (use-package evil-god-state :ensure t
-  :config (setq god-mode-alist '((nil . "C-") ("b" . "M-") ("B" . "C-M-"))))
-(use-package diminish :ensure t)
-(evil-define-key 'normal global-map "m"  'evil-execute-in-god-state )
+  :config (setq god-mode-alist '((nil . "C-") ("o" . "M-") ("O" . "C-M-"))))
+(use-package diminish :ensure t :after evil-god-state)
+(evil-define-key 'normal global-map "gl"  'evil-execute-in-god-state )
 (add-hook 'evil-god-state-entry-hook (lambda () (diminish 'god-local-mode)))
 (add-hook 'evil-god-state-exit-hook (lambda () (diminish-undo 'god-local-mode)))
 (evil-define-key 'god global-map [escape] 'evil-god-state-bail)
@@ -393,13 +394,14 @@ folder, otherwise delete a word"
 (use-package general
   :config
   (general-create-definer rune/leader-keys
-    :keymaps '(normal visual insert emacs )
-    :prefix "C-SPC"
-    :global-prefix "C-SPC"
+
+    :keymaps '(normal visual  emacs god-local-mode-map)
+    :prefix "M-n"
     )
 
   (rune/leader-keys
     "t"  '(:ignore t :which-key "toggles")
+    "tgr"  '(golden-ratio-mode  :which-key "toggles golden ratio mode")
     "ed" '(edit-server-start  :which-key "edit server start")
     "es" '(eshell :which-key "eshell")
     "acf" '(company-capf :which-key "autocomplete company capf")
@@ -446,7 +448,7 @@ folder, otherwise delete a word"
   :config
   (company-prescient-mode +1))
 (require `company)
-(setq lsp-keymap-prefix "C-a C-a l")
+(setq lsp-keymap-prefix "M-n l")
 
 (use-package lsp-mode
   :init (add-to-list 'company-backends 'company-capf)
@@ -529,8 +531,14 @@ folder, otherwise delete a word"
 (use-package tree-sitter-langs
   :after tree-sitter
   :ensure t
-  :commands (  tree-sitter-hl-mode)
+  :commands (tree-sitter-hl-mode)
   )
+
+(defun my-lsp-hook ()
+  "Activate tree-sitter-hl-mode when lsp-mode is activated."
+  (when lsp-mode (tree-sitter-hl-mode 1)))
+(add-hook 'lsp-mode-hook #'my-lsp-hook)
+
 (use-package company
   :hook (prog-mode . company-mode)
   :bind ("TAB" . company-complete)
@@ -567,20 +575,10 @@ folder, otherwise delete a word"
   (setq flycheck-check-syntax-automatically '(save mode-enabled newline))
   (setq flycheck-display-errors-delay 0.0))
 
-(use-package flycheck-posframe
-  :ensure t
-  :after flycheck
-  :config
-  (flycheck-posframe-configure-pretty-defaults)
-  (set-face-attribute 'flycheck-posframe-error-face nil :inherit nil :foreground "red")
-  (set-face-attribute 'flycheck-posframe-warning-face nil :foreground "orange")
-  (set-face-attribute 'flycheck-posframe-info-face nil :foreground "blue")
-  (set-face-attribute 'flycheck-posframe-border-face nil :foreground "#dc752f")
-  (add-hook 'flycheck-mode-hook #'flycheck-posframe-mode))
 
 (use-package flycheck-inline :ensure t :after flycheck-mode )
 
-(setq flycheck-inline-display-function (lambda (msg pos)
+(setq flycheck-inline-display-function (lambda (msg pos errors)
  (flycheck-inline-display-phantom msg))
  flycheck-inline-clear-function #'flycheck-inline-clear-phantoms)
 (with-eval-after-load 'flycheck
@@ -1125,7 +1123,10 @@ folder, otherwise delete a word"
               emacs-lisp-mode
               web-mode
               typescript-mode
-              js2-mode))
+              js2-mode
+              js-mode
+))
+
 
 (defun read-file (file-path)
   (with-temp-buffer
