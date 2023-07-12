@@ -376,12 +376,6 @@ folder, otherwise delete a word"
   :config
   (setq which-key-idle-delay 1))
 
-(use-package counsel
-  :bind (("M-x" . counsel-M-x)
-         ("C-x b" . counsel-ibuffer)
-         ("C-x C-f" . counsel-find-file)
-         :map minibuffer-local-map
-         ("C-r" . 'counsel-minibuffer-history)))
 
 (use-package helpful
   :custom
