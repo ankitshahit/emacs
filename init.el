@@ -67,13 +67,16 @@
 ;; Recipe is always a list
 ;; Install via Guix if length == 1 or :guix t is present
 
-(setq backup-directory-alist '(("." . "~/.emacs.d/backup"))
+(setq backup-directory-alist '((".*" . ,temporary-file-directory))
       backup-by-copying t    ; Don't delink hardlinks
       version-control t      ; Use version numbers on backups
       delete-old-versions t  ; Automatically delete excess backups
       kept-new-versions 20   ; how many of the newest versions to keep
       kept-old-versions 5    ; and how many of the old
       )
+(setq auto-save-file-name-transforms
+`((".*" ,temporary-file-directory t)))
+(setq delete-by-moving-to-trash t)
 ;; Initialize package sources
 (defvar dw/guix-emacs-packages '()
   "Contains a list of all Emacs package names that must be
@@ -483,14 +486,14 @@ folder, otherwise delete a word"
     (cancel-timer idle-highlight-timer)
     (setq idle-highlight-timer nil)))
 (global-so-long-mode 1)
-(use-package dashboard
-  :ensure t
-  :config
-  (dashboard-setup-startup-hook))
 
 (load-file "~/.emacs.d/org.el")
 (load-file "~/.emacs.d/ledger.el")
 
+;; (use-package dashboard
+;;   :ensure t
+;;   :config
+;;   (dashboard-setup-startup-hook))
 (use-package hydra)
 
 (defhydra hydra-text-scale (:timeout 4)
