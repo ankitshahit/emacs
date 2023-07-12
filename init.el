@@ -35,9 +35,11 @@
                                            "\nThis is the GNU system.  Welcome.\n")))
 ;; Use straight.el for use-package expressions
 (straight-use-package 'use-package)
-(straight-use-package '(setup :type git :host nil :repo "https://git.sr.ht/~pkal/setup"))
+;;(straight-use-package '(setup :type git :host nil :repo "https://git.sr.ht/~pkal/setup"))
+(load-file "~/.emacs.d/setup.el")
 (require 'setup)
 ;; Profile emacs startup
+
 (add-hook 'emacs-startup-hook
           (lambda ()
             (message "*** Emacs loaded in %s seconds with %d garbage collections."
