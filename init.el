@@ -52,8 +52,6 @@
                          ("org" . "https://orgmode.org/elpa/")
                          ("elpa" . "https://elpa.gnu.org/packages/")
                          ("org-contrib" . "https://elpa.nongnu.org/nongnu/")
-
-
                          ))
 
 (package-initialize)
@@ -124,156 +122,8 @@ installed via Guix.")
   (gcmh-mode 1)
   )
 
-
-;; ============== Editor connfiguration ===============
-(cd "g:/projects/")
-
-;; Set default connection mode to SSH
-(setq tramp-default-method "ssh")
-(setq find-program ( getenv  "find-program" ))
-(setq markdown-program ( getenv  "markdown-program" ))
-
-(setq inhibit-startup-message t)
-(set-language-environment "UTF-8")
-
-(set-default-coding-systems 'utf-8)
-
-(scroll-bar-mode -1)        ; Disable visible scrollbar
-(electric-pair-mode t)
-(auto-fill-mode 1)
-(abbrev-mode 1)
-(subword-mode 1)
-(electric-layout-mode t)
-(show-paren-mode 1)
-(tool-bar-mode -1)          ; Disable the toolbar
-(tooltip-mode -1)           ; Disable tooltips
-
-(setq compile-command "")
-(global-set-key (kbd "<C-tab>") 'up-list)
-(global-set-key (kbd "<backtab>") 'backward-up-list)
-(setq-default indent-tabs-mode nil)
-(setq-default tab-width 2)
-(setq-default evil-shift-width tab-width)
-
-(set-fringe-mode 10)        ; Give some breathing room
-(menu-bar-mode -1)            ; Disable the menu bar
-(tab-bar-mode t)
-(setq confirm-kill-emacs 'yes-or-no-p)
-;; maximize sccreen and windowSet frame transparency and maximize windows by default.
-(add-to-list 'default-frame-alist '(alpha . (85 . 90)))
-(set-frame-parameter (selected-frame) 'alpha '(85 . 90))
-(add-to-list 'default-frame-alist '(fullscreen . maximized))
-(add-hook 'window-setup-hook 'toggle-frame-fullscreen t)
-(add-hook 'window-setup-hook 'toggle-frame-maximized t)
-;; minimize/maximize code folds
-(add-hook 'prog-mode-hook #'(lambda () (hs-minor-mode t)))
-;; Set up the visible bell
-(setq visible-bell t)
-
-(set-face-attribute 'default nil :font "Fira Code Retina" :height runemacs/default-font-size)
-
-(column-number-mode)
-;; Enable line numbers for some modes
-(dolist (mode '(text-mode-hook
-                prog-mode-hook
-                conf-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 1))))
-
-(global-display-line-numbers-mode t)
-(setq display-line-numbers-type 'relative)
-
-(setq large-file-warning-threshold nil)
-
-(setq vc-follow-symlinks t)
-
-(setq ad-redefinition-action 'accept)
-;;Basic Customization
-(setq display-time-format "%l:%M %p %b %y"
-      display-time-default-load-average nil)
-(display-time-mode t)
-;; Revert Dired and other buffers
-(setq global-auto-revert-non-file-buffers t)
-
-;; Revert buffers when the underlying file has changed
-(global-auto-revert-mode 1)
-
-;; Make ESC quit prompts
-(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
-(global-set-key (kbd "C-M-u") 'universal-argument)
-;; ============ Editor ======================
-;; ================== Evil package =========================
-(use-package evil
-  :init
-  (setq evil-want-integration t)
-  (setq evil-want-keybinding nil)
-  (setq evil-want-C-u-scroll t)
-  (setq evil-want-minibuffer t)
-  (setq evil-want-fine-undo t)
-  (setq evil-undo-system 'undo-fu)
-  (setq evil-search-module 'evil-search)
-  :config
-  (setq evil-want-C-i-jump nil)
-  (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
-  (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
-
-  ;; Use visual line motions even outside of visual-line-mode buffers
-  (evil-global-set-key 'motion "j" 'evil-next-visual-line)
-  (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
-  (evil-set-initial-state 'messages-buffer-mode 'normal)
-  (evil-set-initial-state 'dashboard-mode 'normal
-
-                          )(evil-mode 1))
-
-(use-package undo-fu)
-
-(setq evil-want-keybinding nil)
-(use-package evil-collection
-  :init
-
-  :after evil
-  :config
-  (evil-collection-init))
-(use-package evil-matchit :ensure t :config (global-evil-matchit-mode 1))
-(use-package evil-surround :ensure t :config (global-evil-surround-mode 1))
-
-
-(defun dw/dont-arrow-me-bro ()
-  (interactive)
-  (message "Arrow keys are bad, you know?"))
-;; Disable arrow keys in normal and visual modes
-(define-key evil-normal-state-map (kbd "<left>") 'dw/dont-arrow-me-bro)
-(define-key evil-normal-state-map (kbd "<right>") 'dw/dont-arrow-me-bro)
-(define-key evil-normal-state-map (kbd "<down>") 'dw/dont-arrow-me-bro)
-(define-key evil-normal-state-map (kbd "<up>") 'dw/dont-arrow-me-bro)
-(define-key evil-insert-state-map (kbd "<backspace>") 'dw/dont-arrow-me-bro)
-(evil-global-set-key 'motion (kbd "<left>") 'dw/dont-arrow-me-bro)
-(evil-global-set-key 'motion (kbd "<right>") 'dw/dont-arrow-me-bro)
-(evil-global-set-key 'motion (kbd "<down>") 'dw/dont-arrow-me-bro)
-(evil-global-set-key 'motion (kbd "<up>") 'dw/dont-arrow-me-bro)
-
-(evil-set-initial-state 'messages-buffer-mode 'normal)
-(evil-set-initial-state 'dashboard-mode 'normal)
-(setq evil-want-fine-undo t)
-(define-key evil-normal-state-map (kbd "TAB") 'tab-to-tab-stop)
-
-
-(setq evil-magit-state 'normal)
-(setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
-(setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
-(setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
-(setq scroll-step 1) ;; keyboard scroll one line at a time
-(setq use-dialog-box nil)
-;; (dolist (key '("ESC"))
-;;   (global-unset-key key))
-(use-package evil-god-state :ensure t
-  :config (setq god-mode-alist '((nil . "C-") ("o" . "M-") ("O" . "C-M-"))))
-(use-package diminish :ensure t :after evil-god-state)
-(evil-define-key 'normal global-map "gl"  'evil-execute-in-god-state )
-(add-hook 'evil-god-state-entry-hook (lambda () (diminish 'god-local-mode)))
-(add-hook 'evil-god-state-exit-hook (lambda () (diminish-undo 'god-local-mode)))
-(evil-define-key 'god global-map [escape] 'evil-god-state-bail)
-
-;;=========== End of evil mode ================
+(load-file "~/.emacs.d/editor.el")
+(load-file "~/.emacs.d/evil.el")
 (defun dw/minibuffer-backward-kill (arg)
   "When minibuffer is completing a file name delete up to parent
 folder, otherwise delete a word"
@@ -357,14 +207,6 @@ folder, otherwise delete a word"
 (setq inhibit-compacting-font-caches t)
 (use-package doom-themes
   :init (load-theme 'doom-dracula t))
-
-(use-package rainbow-delimiters
-  :hook (prog-mode . rainbow-delimiters-mode))
-(use-package ivy-rich
-  :init
-  (ivy-rich-mode 1))
-
-
 (setup (:require paren)
   (set-face-attribute 'show-paren-match-expression nil :background "#363e4a")
   (show-paren-mode 1))
@@ -376,7 +218,12 @@ folder, otherwise delete a word"
   :config
   (setq which-key-idle-delay 1))
 
-
+(use-package counsel
+  :bind (("M-x" . counsel-M-x)
+         ("C-x b" . counsel-ibuffer)
+         ("C-x C-f" . counsel-find-file)
+         :map minibuffer-local-map
+         ("C-r" . 'counsel-minibuffer-history)))
 (use-package helpful
   :custom
   (counsel-describe-function-function #'helpful-callable)
@@ -390,7 +237,6 @@ folder, otherwise delete a word"
 (use-package general
   :config
   (general-create-definer rune/leader-keys
-
     :keymaps '(normal visual  emacs god-local-mode-map)
     :prefix "M-n"
     )
@@ -642,245 +488,9 @@ folder, otherwise delete a word"
   :config
   (dashboard-setup-startup-hook))
 
+(load-file "~/.emacs.d/org.el")
+(load-file "~/.emacs.d/ledger.el")
 
-;; ==================  org MODE ===============
-;; ==================  org roam MODE ===============
-(straight-use-package '(org :type built-in))
-(defun efs/org-mode-setup ()
-  (org-indent-mode)
-  (variable-pitch-mode 1)
-  (visual-line-mode 1))
-
-(use-package org
-  :hook (org-mode . efs/org-mode-setup)
-  :config
-  (setq org-ellipsis " ▾")
-  (setq org-startup-with-inline-images t)
-  (setq org-display-inline-images t)
-  (setq org-redisplay-inline-images t)
-  (setq org-agenda-start-with-log-mode t)
-  (setq org-log-done 'time)
-  (setq org-log-into-drawer t)
-  (setq org-agenda-files
-        '("g:/projects/org-notes/birthdates.org"
-          ))
-  (require 'org-habit)
-  (add-to-list 'org-modules 'org-habit)
-  (setq org-habit-graph-column 60)
-
-  (setq org-todo-keywords
-        '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
-          (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
-
-  (setq org-refile-targets
-        '(("Archive.org" :maxlevel . 1)
-          ("Tasks.org" :maxlevel . 1)))
-
-  ;; Save Org buffers after refiling!
-  (advice-add 'org-refile :after 'org-save-all-org-buffers)
-
-  (setq org-tag-alist
-        '((:startgroup)
-                                        ; Put mutually exclusive tags here
-          (:endgroup)
-          ("@errand" . ?E)
-          ("@home" . ?H)
-          ("@work" . ?W)
-          ("agenda" . ?a)
-          ("planning" . ?p)
-          ("publish" . ?P)
-          ("batch" . ?b)
-          ("note" . ?n)
-          ("idea" . ?i)))
-
-  ;; Configure custom agenda views
-  (setq org-agenda-custom-commands
-        '(("d" "Dashboard"
-           ((agenda "" ((org-deadline-warning-days 7)))
-            (todo "NEXT"
-                  ((org-agenda-overriding-header "Next Tasks")))
-            (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))))
-
-          ("n" "Next Tasks"
-           ((todo "NEXT"
-                  ((org-agenda-overriding-header "Next Tasks")))))
-
-          ("W" "Work Tasks" tags-todo "+work-email")
-
-          ;; Low-effort next actions
-          ("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
-           ((org-agenda-overriding-header "Low Effort Tasks")
-            (org-agenda-max-todos 20)
-            (org-agenda-files org-agenda-files)))
-
-          ("w" "Workflow Status"
-           ((todo "WAIT"
-                  ((org-agenda-overriding-header "Waiting on External")
-                   (org-agenda-files org-agenda-files)))
-            (todo "REVIEW"
-                  ((org-agenda-overriding-header "In Review")
-                   (org-agenda-files org-agenda-files)))
-            (todo "PLAN"
-                  ((org-agenda-overriding-header "In Planning")
-                   (org-agenda-todo-list-sublevels nil)
-                   (org-agenda-files org-agenda-files)))
-            (todo "BACKLOG"
-                  ((org-agenda-overriding-header "Project Backlog")
-                   (org-agenda-todo-list-sublevels nil)
-                   (org-agenda-files org-agenda-files)))
-            (todo "READY"
-                  ((org-agenda-overriding-header "Ready for Work")
-                   (org-agenda-files org-agenda-files)))
-            (todo "ACTIVE"
-                  ((org-agenda-overriding-header "Active Projects")
-                   (org-agenda-files org-agenda-files)))
-            (todo "COMPLETED"
-                  ((org-agenda-overriding-header "Completed Projects")
-                   (org-agenda-files org-agenda-files)))
-            (todo "CANC"
-                  ((org-agenda-overriding-header "Cancelled Projects")
-                   (org-agenda-files org-agenda-files)))))))
-
-  (setq org-capture-templates
-        `(("t" "Tasks / Projects")
-          ("tt" "Task" entry (file+olp "~/Projects/Code/emacs-from-scratch/OrgFiles/Tasks.org" "Inbox")
-           "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
-
-          ("j" "Journal Entries")
-          ("jj" "Journal" entry
-           (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
-           "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
-           ;; ,(dw/read-file-as-string "~/Notes/Templates/Daily.org")
-           :clock-in :clock-resume
-           :empty-lines 1)
-          ("jm" "Meeting" entry
-           (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
-           "* %<%I:%M %p> - %a :meetings:\n\n%?\n\n"
-           :clock-in :clock-resume
-           :empty-lines 1)
-
-          ("w" "Workflows")
-          ("we" "Checking Email" entry (file+olp+datetree "~/Projects/Code/emacs-from-scratch/OrgFiles/Journal.org")
-           "* Checking Email :email:\n\n%?" :clock-in :clock-resume :empty-lines 1)
-
-          ("m" "Metrics Capture")
-          ("mw" "Weight" table-line (file+headline "~/Projects/Code/emacs-from-scratch/OrgFiles/Metrics.org" "Weight")
-           "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t)))
-
-  (define-key global-map (kbd "C-c j")
-    (lambda () (interactive) (org-capture nil "jj")))
-
-  ;; (efs/org-font-setup)
-  )
-(use-package org-bullets
-  :after org
-  :hook (org-mode . org-bullets-mode)
-  :custom
-  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
-
-(defun efs/org-mode-visual-fill ()
-  (setq visual-fill-column-width 100
-        visual-fill-column-center-text t)
-  (visual-fill-column-mode 1))
-
-(use-package visual-fill-column
-  :hook (org-mode . efs/org-mode-visual-fill))
-
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((emacs-lisp . t)
-   (python . t)))
-
-(push '("conf-unix" . conf-unix) org-src-lang-modes)
-
-;; Automatically tangle our Emacs.org config file when we save it
-(defun efs/org-babel-tangle-config ()
-  (when (string-equal (buffer-file-name)
-                      (expand-file-name "~/Projects/Code/emacs-from-scratch/Emacs.org"))
-    ;; Dynamic scoping to the rescue
-    (let ((org-confirm-babel-evaluate nil))
-      (org-babel-tangle))))
-
-(add-hook 'org-mode-hook (lambda () (add-hook 'after-save-hook #'efs/org-babel-tangle-config)))
-
-;; ==================  end org roam MODE ===============
-
-
-(add-hook 'org-mode-hook #'org-modern-mode)
-(add-hook 'org-agenda-finalize-hook #'org-modern-agenda)
-;; Add frame borders and window dividers
-(modify-all-frames-parameters
- '((right-divider-width . 40)
-   (internal-border-width . 40)))
-(dolist (face '(window-divider
-                window-divider-first-pixel
-                window-divider-last-pixel))
-  (face-spec-reset-face face)
-  (set-face-foreground face (face-attribute 'default :background)))
-(set-face-background 'fringe (face-attribute 'default :background))
-(setq org-ellipsis " ▾")
-(setq org-agenda-start-with-log-mode t)
-(setq org-log-done 'time)
-(setq org-log-into-drawer t)
-
-(setq
- ;; Edit settings
- org-auto-align-tags nil
- org-tags-column 0
- org-catch-invisible-edits 'show-and-error
- org-special-ctrl-a/e t
- org-insert-heading-respect-content t
-
- ;; Org styling, hide markup etc.
- org-hide-emphasis-markers t
- org-pretty-entities t
- org-ellipsis "…"
-
- ;; Agenda styling
- org-agenda-tags-column 0
- org-agenda-block-separator ?─
- org-agenda-time-grid
- '((daily today require-timed)
-   (800 1000 1200 1400 1600 1800 2000)
-   " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
- org-agenda-current-time-string
- "⭠ now ─────────────────────────────────────────────────")
-
-(global-org-modern-mode)
-
-(use-package org-jira :ensure t :commands (org-jira-create-issue) )
-(setq jiralib-url "https://falkondata.atlassian.net")
-;; ================== End org MODE ===============
-;; ==================legder MODE ===============
-
-(setup (:pkg ledger-mode)
-  (:file-match "\\.lgr\\'")
-  (:file-match "\\.dat\\'")
-  (:file-match "\\.ledger\\'")
-
-  (:bind "TAB" completion-at-point)
-  (:option
-   ledger-reports '(("bal" "%(binary) -f %(ledger-file) bal")
-                    ("bal this quarter" "%(binary) -f %(ledger-file) --period \"this quarter\" bal")
-                    ("bal last quarter" "%(binary) -f %(ledger-file) --period \"last quarter\" bal")
-                    ("reg" "%(binary) -f %(ledger-file) reg")
-                    ("payee" "%(binary) -f %(ledger-file) reg @%(payee)")
-                    ("account" "%(binary) -f %(ledger-file) reg %(account)"))))
-
-(setup (:pkg hledger-mode :straight t)
-  (:bind "TAB" completion-at-point))
-(delete 'company-dabbrev company-backends)
-(use-package flycheck-ledger :after ledger-mode)
-(eval-after-load 'flycheck '(require 'flycheck-ledger))
-(global-flycheck-mode t)
-(use-package org-contrib :ensure t)
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '(
-   (ledger . t)         ;this is the important one for this tutorial
-   ))
-
-;; ================== End ledger MODE ===============
 (use-package hydra)
 
 (defhydra hydra-text-scale (:timeout 4)
@@ -955,19 +565,6 @@ folder, otherwise delete a word"
                                    nil))
   (marginalia-mode))
 
-(setup (:pkg embark)
-  (:also-load embark-consult)
-  (:global "C-S-a" embark-act)
-  (:with-map minibuffer-local-map
-    (:bind "C-d" embark-act))
-
-  ;; Show Embark actions via which-key
-  (setq embark-action-indicator
-        (lambda (map)
-          (which-key--show-keymap "Embark" map nil nil 'no-paging)
-          #'which-key--hide-popup-ignore-command)
-        embark-become-indicator embark-action-indicator))
-
 (setup winner
   (winner-mode)
   (define-key evil-window-map "u" 'winner-undo)
@@ -1012,16 +609,6 @@ folder, otherwise delete a word"
            "M-'" popper-cycle
            "C-M-\"" popper-toggle-type)
   (:option popper-window-height 12
-           ;; (popper-window-height
-           ;; (lambda (window)
-           ;;   (let ((buffer-mode (with-current-buffer (window-buffer window)
-           ;;                        major-mode)))
-           ;;     (message "BUFFER MODE: %s" buffer-mode)
-           ;;     (pcase buffer-mode
-           ;;       ('exwm-mode 40)
-           ;;       ('helpful-mode 20)
-           ;;       ('eshell-mode (progn (message "eshell!") 10))
-           ;;       (_ 15)))))
            popper-reference-buffers '("^\\*eshell\\*"
                                       "^vterm"
                                       help-mode
@@ -1029,7 +616,6 @@ folder, otherwise delete a word"
                                       compilation-mode))
   (require 'popper) ;; Needed because I disabled autoloads
   (popper-mode 1))
-
 
 (setup (:pkg all-the-icons-dired))
 (setup (:pkg dired-single))
