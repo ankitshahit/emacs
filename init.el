@@ -139,9 +139,6 @@ folder, otherwise delete a word"
     (delete-word (- arg))))
 
 (setup (:pkg vertico)
-  ;; :straight '(vertico :host github
-  ;;                     :repo "minad/vertico"
-  ;;                     :branch "main")
   (vertico-mode)
   (:with-map vertico-map
     (:bind "C-j" vertico-next
@@ -167,7 +164,7 @@ folder, otherwise delete a word"
 
 ;; (use-package command-log-mode)
 ;; ============ Styling ================
-(use-package golden-ratio :ensure t :config (golden-ratio-mode 1))
+(use-package golden-ratio  :commands (golden-ratio))
 (use-package ivy
   :diminish
   :bind (("C-s" . swiper)
@@ -490,10 +487,6 @@ folder, otherwise delete a word"
 (load-file "~/.emacs.d/org.el")
 (load-file "~/.emacs.d/ledger.el")
 
-;; (use-package dashboard
-;;   :ensure t
-;;   :config
-;;   (dashboard-setup-startup-hook))
 (use-package hydra)
 
 (defhydra hydra-text-scale (:timeout 4)
@@ -577,7 +570,6 @@ folder, otherwise delete a word"
   (setq visual-fill-column-width 95
         visual-fill-column-center-text t)
   (:hook-into org-mode)
-
   (:hook-into text-mode)
   (:hook-into lisp-mode)
   (:hook-into hs-minor-mode)
@@ -851,6 +843,8 @@ folder, otherwise delete a word"
   (setq esh-autosuggest-delay 0.3)
   (:hook dw/esh-autosuggest-setup)
   (:hook-into eshell-mode))
+;; ========================= csv mode  ===============
+(use-package csv-mode :mode ("\\.csv?\\'" . csv-mode))
 ;; ========================= firefox ===============
 (use-package edit-server
   :ensure t
@@ -872,6 +866,7 @@ folder, otherwise delete a word"
 (setup :straight '(edit-server-htmlize :host github))
  (when (and (daemonp) (require 'edit-server nil :noerror))
    (edit-server-start))
+
 (when (require 'edit-server nil :noerror)
   (setq edit-server-new-frame nil)
   (edit-server-start))

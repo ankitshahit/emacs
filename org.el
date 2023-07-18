@@ -162,8 +162,6 @@
 ;; ==================  end org roam MODE ===============
 
 
-(add-hook 'org-mode-hook #'org-modern-mode)
-(add-hook 'org-agenda-finalize-hook #'org-modern-agenda)
 ;; Add frame borders and window dividers
 (modify-all-frames-parameters
  '((right-divider-width . 40)
@@ -201,10 +199,6 @@
    " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
  org-agenda-current-time-string
  "⭠ now ─────────────────────────────────────────────────")
-(use-package org-modern
-  :mode "\\.org\\'"
-  :config (global-org-modern-mode)
-)
 
 (use-package org-jira :config (setq jiralib-url "https://falkondata.atlassian.net") :commands (org-jira-create-issue) )
 
