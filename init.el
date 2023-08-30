@@ -6,7 +6,7 @@
 
 (defun my-minibuffer-exit-hook ()
   (setq gc-cons-threshold 800000))
-
+(setq garbage-collection-messages t)
 (add-hook 'minibuffer-setup-hook #'my-minibuffer-setup-hook)
 (add-hook 'minibuffer-exit-hook #'my-minibuffer-exit-hook)
 
@@ -125,8 +125,14 @@ installed via Guix.")
   (gcmh-mode 1)
   )
 
+(use-package perfect-margin)
+(setq perfect-margin-visible-width 128)
+(perfect-margin-mode 1)
 (load-file "~/.emacs.d/editor.el")
 (load-file "~/.emacs.d/evil.el")
+(use-package dashboard :ensure t
+  :config (dashboard-open)
+)
 (defun dw/minibuffer-backward-kill (arg)
   "When minibuffer is completing a file name delete up to parent
 folder, otherwise delete a word"
@@ -244,7 +250,6 @@ folder, otherwise delete a word"
   (rune/leader-keys
     "t"  '(:ignore t :which-key "toggles")
     "tgr"  '(golden-ratio-mode  :which-key "toggles golden ratio mode")
-    "ed" '(edit-server-start  :which-key "edit server start")
     "es" '(eshell :which-key "eshell")
     "acf" '(company-capf :which-key "autocomplete company capf")
     "kb" '(only-current-buffer :which-key "kill all buffers except current one")
@@ -285,6 +290,7 @@ folder, otherwise delete a word"
                                                root))))
                   (when (and eslint (file-executable-p eslint))
                     (setq-local flycheck-javascript-eslint-executable eslint))))))
+
 (use-package company-prescient
   :after (prescient company)
   :config
@@ -305,6 +311,7 @@ folder, otherwise delete a word"
   :config
   (setq lsp-auto-guess-root t)
   (setq lsp-diagnostic-package :flycheck)             ; disable flycheck-lsp for most modes
+  (setq warning-suppress-types '((lsp-mode)))
   (setq lsp-enable-symbol-highlighting t)
   (with-eval-after-load 'lsp-mode
     (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
@@ -355,7 +362,7 @@ folder, otherwise delete a word"
         lsp-ui-doc-show-with-cursor t))
 
 (use-package terraform-mode
-  :config (add-to-list 'company-backends 'company-terraform-init)
+  :config (add-to-list 'company-backends 'company-terraform)
   :mode (
          ( "\\.tf\\'" . terraform-mode )
          ( "\\.tfvars\\'" . terraform-mode )
@@ -420,17 +427,21 @@ folder, otherwise delete a word"
 
 (use-package flycheck-inline :ensure t :after flycheck-mode )
 
-(setq flycheck-inline-display-function (lambda (msg pos errors)
- (flycheck-inline-display-phantom msg))
- flycheck-inline-clear-function #'flycheck-inline-clear-phantoms)
+;; (setq flycheck-inline-display-function (lambda (msg pos errors)
+;;  (flycheck-inline-display-phantom msg))
+;;  flycheck-inline-clear-function #'flycheck-inline-clear-phantoms)
 (with-eval-after-load 'flycheck
   (add-hook 'flycheck-mode-hook #'flycheck-inline-mode))
 ;;========================== end flycheck ==================
 (use-package rjsx-mode
   :ensure t
   :config
+  (add-to-list 'auto-mode-alist '("\\.jsx?\\'" . rjsx-mode))
   (add-to-list 'auto-mode-alist '("components\/.*\.js\'" . rjsx-mode))
-  (add-to-list 'auto-mode-alist '("pages\/.*\.js\'" . rjsx-mode)))
+  (add-to-list 'auto-mode-alist '("components\/.*\.jsx\'" . rjsx-mode))
+  (add-to-list 'auto-mode-alist '("pages\/.*\.js\'" . rjsx-mode))
+  (add-to-list 'auto-mode-alist '("pages\/.*\.jsx\'" . rjsx-mode))
+)
 
 
 (use-package js-mode
@@ -439,12 +450,12 @@ folder, otherwise delete a word"
          ("\\.jsx?\\'" . js-mode))
   :config
   (setq javascript-indent-level 2)
-  (setq js-indent-level 2))
+  (setq js-indent-level 2)
+)
 
 (with-eval-after-load 'js
   (setq js-indent-level 2)
   (define-key js-mode-map (kbd "M-.") nil))
-
 (add-hook 'js-mode-hook #'lsp)
 (add-hook 'js2-mode-hook #'lsp)
 (advice-add 'json-parse-buffer :around
@@ -453,7 +464,6 @@ folder, otherwise delete a word"
                 (while (re-search-forward "\\\\u0000" nil t)
                   (replace-match "")))
               (apply orig rest)))
-
 
 
 (use-package prettier-js
@@ -606,6 +616,7 @@ folder, otherwise delete a word"
   (:option popper-window-height 12
            popper-reference-buffers '("^\\*eshell\\*"
                                       "^vterm"
+                                      shell-mode
                                       help-mode
                                       helpful-mode
                                       compilation-mode))
@@ -845,32 +856,40 @@ folder, otherwise delete a word"
   (:hook-into eshell-mode))
 ;; ========================= csv mode  ===============
 (use-package csv-mode :mode ("\\.csv?\\'" . csv-mode))
+
+;; You should skip load-path when installed from MELPA
+(use-package awscli-capf
+  :commands (awscli-capf-add)
+  :hook (eshell-mode . awscli-capf-add)
+:hook (shell-mode . awscli-capf-add)
+:hook (yaml-mode . awscli-capf-add)
+)
 ;; ========================= firefox ===============
-(use-package edit-server
-  :ensure t
-  :commands edit-server-start
-  :init (if after-init-time
-              (edit-server-start)
-            (add-hook 'after-init-hook
-                      #'(lambda() (edit-server-start))))
-  :config (setq edit-server-new-frame-alist
-                '((name . "Edit with Emacs FRAME")
-                  (top . 200)
-                  (left . 200)
-                  (width . 80)
-                  (height . 25)
-                  (minibuffer . t)
-                  (menu-bar-lines . t)
-                  (window-system . x))))
+;; (use-package edit-server
+;;   :ensure t
+;;   :commands edit-server-start
+;;   :init (if after-init-time
+;;               (edit-server-start)
+;;             (add-hook 'after-init-hook
+;;                       #'(lambda() (edit-server-start))))
+;;   :config (setq edit-server-new-frame-alist
+;;                 '((name . "Edit with Emacs FRAME")
+;;                   (top . 200)
+;;                   (left . 200)
+;;                   (width . 80)
+;;                   (height . 25)
+;;                   (minibuffer . t)
+;;                   (menu-bar-lines . t)
+;;                   (window-system . x))))
 
-(setup :straight '(edit-server-htmlize :host github))
- (when (and (daemonp) (require 'edit-server nil :noerror))
-   (edit-server-start))
+;; (setup :straight '(edit-server-htmlize :host github))
+;;  (when (and (daemonp) (require 'edit-server nil :noerror))
+;;    (edit-server-start))
 
-(when (require 'edit-server nil :noerror)
-  (setq edit-server-new-frame nil)
-  (edit-server-start))
-  (add-hook 'edit-server-start-hook 'markdown-mode)
+;; (when (require 'edit-server nil :noerror)
+;;   (setq edit-server-new-frame nil)
+;;   (edit-server-start))
+;;   (add-hook 'edit-server-start-hook 'markdown-mode)
 
 ;; ========================= end firefox ===============
 
@@ -884,10 +903,18 @@ folder, otherwise delete a word"
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   '(hydra evil-collection evil which-key use-package rainbow-delimiters ivy-rich helpful general doom-themes doom-modeline counsel command-log-mode all-the-icons)))
+   '(hydra evil-collection evil which-key use-package
+  rainbow-delimiters ivy-rich helpful general doom-themes
+  doom-modeline counsel command-log-mode all-the-icons))
+
+ '(warning-suppress-types '(( lsp-mode )))
+ '(warning-suppress-types '((lsp-mode) (lsp-mode)))
+'(warning-suppress-log-types '((use-package) (lsp-mode) (lsp-mode)))
+)
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+
  )

@@ -15,9 +15,6 @@
                     ("payee" "%(binary) -f %(ledger-file) reg @%(payee)")
                     ("account" "%(binary) -f %(ledger-file) reg %(account)"))))
 
-(setup (:pkg hledger-mode :straight t)
-  (:bind "TAB" completion-at-point))
-(delete 'company-dabbrev company-backends)
 (use-package flycheck-ledger :after ledger-mode)
 (eval-after-load 'flycheck '(require 'flycheck-ledger))
 (global-flycheck-mode t)

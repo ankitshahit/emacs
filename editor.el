@@ -43,7 +43,7 @@
 (add-hook 'prog-mode-hook #'(lambda () (hs-minor-mode t)))
 ;; Set up the visible bell
 (setq visible-bell t)
-
+(setq sgml-quick-keys 'close)
 (set-face-attribute 'default nil :font "Fira Code Retina" :height runemacs/default-font-size)
 
 (column-number-mode)
@@ -74,4 +74,6 @@
 ;; Make ESC quit prompts
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 (global-set-key (kbd "C-M-u") 'universal-argument)
+(setq read-quoted-char-radix 10)
+(setq initial-scratch-message nil)
 ;; ============ Editor ======================
