@@ -98,8 +98,8 @@
 
   (setq org-capture-templates
         `(("t" "Tasks / Projects")
-          ;; ("tt" "Task" entry (file+olp "g:/projects/org-notes/tasks.org" "Inbox")
-          ;;  "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
+          ("tt" "Task" entry (file+olp "g:/projects/org-notes/tasks.org" "Inbox")
+           "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
 
           ("j" "Journal Entries")
           ("jj" "Journal" entry

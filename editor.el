@@ -6,6 +6,7 @@
 (setq tramp-default-method "ssh")
 (setq find-program ( getenv  "find-program" ))
 (setq markdown-program ( getenv  "markdown-program" ))
+(setq completion-cycle-threshold 1)
 
 (setq inhibit-startup-message t)
 (set-language-environment "UTF-8")
@@ -77,3 +78,21 @@
 (setq read-quoted-char-radix 10)
 (setq initial-scratch-message nil)
 ;; ============ Editor ======================
+(defun my-sgml-insert-gt ()
+  "Inserts a `>' character and calls
+`my-sgml-close-tag-if-necessary', leaving point where it is."
+  (interactive)
+  (insert ">")
+  (save-excursion (my-sgml-close-tag-if-necessary)))
+
+(defun my-sgml-close-tag-if-necessary ()
+  "Calls sgml-close-tag if the tag immediately before point is
+an opening tag that is not followed by a matching closing tag."
+  (when (looking-back "<\\s-*\\([^</> \t\r\n]+\\)[^</>]*>")
+    (let ((tag (match-string 1)))
+      (unless (and (not (sgml-unclosed-tag-p tag))
+           (looking-at (concat "\\s-*<\\s-*/\\s-*" tag "\\s-*>")))
+    (sgml-close-tag)))))
+
+(eval-after-load "js-mode"
+  '(define-key sgml-mode-map ">" 'my-sgml-insert-gt))

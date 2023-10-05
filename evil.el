@@ -64,12 +64,18 @@
 (setq use-dialog-box nil)
 ;; (dolist (key '("ESC"))
 ;;   (global-unset-key key))
-(use-package evil-god-state :ensure t
-  :config (setq god-mode-alist '((nil . "C-") ("o" . "M-") ("O" . "C-M-"))))
-(use-package diminish :ensure t :after evil-god-state)
-(evil-define-key 'normal global-map "gl"  'evil-execute-in-god-state )
+;; (use-package evil-god-state :ensure t
+;;   :config (setq god-mode-alist '((nil . "C-") ("o" . "M-") ("O" . "C-M-"))))
+;; (use-package diminish :ensure t :after evil-god-state)
+;; (evil-define-key 'normal global-map "gl"  'evil-execute-in-god-state )
+;; (add-hook 'evil-god-state-entry-hook (lambda () (diminish 'god-local-mode)))
+;; (add-hook 'evil-god-state-exit-hook (lambda () (diminish-undo 'god-local-mode)))
+;; (evil-define-key 'god global-map [escape] 'evil-god-state-bail)
+
+(use-package evil-god-state)
+
+(evil-define-key 'normal global-map "," 'evil-execute-in-god-state)
 (add-hook 'evil-god-state-entry-hook (lambda () (diminish 'god-local-mode)))
 (add-hook 'evil-god-state-exit-hook (lambda () (diminish-undo 'god-local-mode)))
 (evil-define-key 'god global-map [escape] 'evil-god-state-bail)
-
 ;;=========== End of evil mode ================

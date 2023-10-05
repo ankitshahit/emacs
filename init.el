@@ -243,14 +243,14 @@ folder, otherwise delete a word"
 (use-package general
   :config
   (general-create-definer rune/leader-keys
-    :keymaps '(normal visual  emacs god-local-mode-map)
-    :prefix "M-n"
+    :keymaps '(normal )
+    :prefix "SPC"
     )
-
   (rune/leader-keys
     "t"  '(:ignore t :which-key "toggles")
     "tgr"  '(golden-ratio-mode  :which-key "toggles golden ratio mode")
     "es" '(eshell :which-key "eshell")
+    "gf" '(grep-find :which-key "search for text across files")
     "acf" '(company-capf :which-key "autocomplete company capf")
     "kb" '(only-current-buffer :which-key "kill all buffers except current one")
     "ji" '(org-jira-create-issue :which-key "create jira issue")
@@ -274,10 +274,13 @@ folder, otherwise delete a word"
 ;; ================= LSP MODE ===================
 ;;
 ;;
+(load-file "~/.emacs.d/dap.el")
 (use-package js
   :ensure nil
-  :mode ("\\.js?\\'" . js2-mode)
+  :mode ("\\.js?\\'" . js-mode)
   :config
+  (require 'dap-node)
+  (dap-node-setup)
   (setq js-indent-level 2)
   (add-hook 'flycheck-mode-hook
             #'(lambda ()
@@ -296,7 +299,7 @@ folder, otherwise delete a word"
   :config
   (company-prescient-mode +1))
 (require `company)
-(setq lsp-keymap-prefix "M-n l")
+;; (setq lsp-keymap-prefix "SPC l")
 
 (use-package lsp-mode
   :init (add-to-list 'company-backends 'company-capf)
@@ -449,6 +452,8 @@ folder, otherwise delete a word"
   :mode (("\\.js?\\'" . js-mode)
          ("\\.jsx?\\'" . js-mode))
   :config
+  (require 'dap-node)
+  (dap-node-setup)
   (setq javascript-indent-level 2)
   (setq js-indent-level 2)
 )
